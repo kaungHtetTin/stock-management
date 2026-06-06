@@ -1,0 +1,8 @@
+# Route all requests through public/ when mod_rewrite is enabled
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /stock-manage/
+
+    RewriteCond %{REQUEST_URI} !^/stock-manage/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

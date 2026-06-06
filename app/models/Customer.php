@@ -1,0 +1,152 @@
+<?php
+/**
+ * Customer model
+ */
+
+require_once APP_PATH . '/helpers/Database.php';
+
+class Customer
+{
+    public const TYPES = ['Retail', 'Whole Sale'];
+
+    public static function all(array $filters = []): array
+    {
+        $db = Database::connect();
+        $sql = 'SELECT * FROM customers WHERE is_active = 1';
+        $params = [];
+
+        if (!empty($filters['q'])) {
+            $sql .= ' AND (customer_code LIKE :q1 OR customer_name LIKE :q2)';
+            $params['q1'] = $params['q2'] = '%' . $filters['q'] . '%';
+        }
+
+        if (!empty($filters['type']) && in_array($filters['type'], self::TYPES, true)) {
+            $sql .= ' AND customer_type = :type';
+            $params['type'] = $filters['type'];
+        }
+
+        $sql .= ' ORDER BY customer_code ASC';
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    public static function find(int $id): ?array
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('SELECT * FROM customers WHERE id = :id AND is_active = 1 LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public static function findByCode(string $code, ?int $excludeId = null): ?array
+    {
+        $db = Database::connect();
+        $sql = 'SELECT * FROM customers WHERE customer_code = :code';
+        $params = ['code' => $code];
+
+        if ($excludeId !== null) {
+            $sql .= ' AND id != :exclude_id';
+            $params['exclude_id'] = $excludeId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public static function create(array $data): int
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare(
+            'INSERT INTO customers (customer_code, customer_name, address, customer_type, created_by)
+             VALUES (:customer_code, :customer_name, :address, :customer_type, :created_by)'
+        );
+        $stmt->execute([
+            'customer_code'  => $data['customer_code'],
+            'customer_name'  => $data['customer_name'],
+            'address'        => $data['address'],
+            'customer_type'  => $data['customer_type'],
+            'created_by'     => $data['created_by'],
+        ]);
+
+        return (int) $db->lastInsertId();
+    }
+
+    public static function update(int $id, array $data): bool
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare(
+            'UPDATE customers SET
+                customer_code = :customer_code,
+                customer_name = :customer_name,
+                address = :address,
+                customer_type = :customer_type
+             WHERE id = :id AND is_active = 1'
+        );
+
+        return $stmt->execute([
+            'id'             => $id,
+            'customer_code'  => $data['customer_code'],
+            'customer_name'  => $data['customer_name'],
+            'address'        => $data['address'],
+            'customer_type'  => $data['customer_type'],
+        ]);
+    }
+
+    public static function softDelete(int $id): bool
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('UPDATE customers SET is_active = 0 WHERE id = :id AND is_active = 1');
+        return $stmt->execute(['id' => $id]);
+    }
+
+    public static function hasStockOutRecords(int $id): bool
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare('SELECT COUNT(*) FROM stock_out WHERE customer_id = :id');
+        $stmt->execute(['id' => $id]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public static function validate(array $input, ?int $excludeId = null): array
+    {
+        $errors = [];
+        $code = trim($input['customer_code'] ?? '');
+        $name = trim($input['customer_name'] ?? '');
+        $type = $input['customer_type'] ?? '';
+
+        if ($code === '') {
+            $errors[] = 'Customer Code is required.';
+        } elseif (self::findByCode($code, $excludeId)) {
+            $errors[] = 'Customer Code already exists.';
+        }
+
+        if ($name === '') {
+            $errors[] = 'Customer Name is required.';
+        }
+
+        if (!in_array($type, self::TYPES, true)) {
+            $errors[] = 'Please select a valid customer type.';
+        }
+
+        return $errors;
+    }
+
+    public static function normalize(array $input): array
+    {
+        return [
+            'customer_code' => trim($input['customer_code'] ?? ''),
+            'customer_name' => trim($input['customer_name'] ?? ''),
+            'address'       => trim($input['address'] ?? '') ?: null,
+            'customer_type' => $input['customer_type'] ?? '',
+        ];
+    }
+}

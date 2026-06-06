@@ -1,0 +1,28 @@
+			Company Name	YUKIOH MYANMAR CO.,LTD								
+			Company ID	119751578								
+												
+												
+			Search	Add 	Edit	Delete	List					
+		Item Module										
+		Customer Module										
+		Stock in Module										
+		Stock Out Module										
+												
+			User Role									
+			Admin									
+			Staff- 1									
+			Staff- 2									
+												
+												
+		Item Module		Customer Module			Stock In			Stock out		Balance List
+		Item No		Customer Code			Item No			Item No		Graph
+		Item Name		Customer Name			Item Name			Item Name		
+		Qty		Customer Address			MFD Date			Customer Name		
+		Unit		Retail  / Whole Sale			Expire Date			MFD Date		
+		Unit  Price		Created Date  & Time			Lot No			Qty		
+		Fruits / Gelato / Icecream					Qty			Unit		
+		Remark					Unit			Reason	Sales	
+		Created Date  & Time					Worker Qty				Sample	
+							In Charge Name				Sale & Maketing	
+											Other	
+							Created Date  & Time			Created Date  & Time		

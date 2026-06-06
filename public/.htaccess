@@ -1,0 +1,5 @@
+# Disable directory listing
+Options -Indexes
+
+# Default document
+DirectoryIndex index.php
