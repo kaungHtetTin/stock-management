@@ -18,6 +18,10 @@ echo Seeding default admin user...
 "%MYSQL%" -u root stock_manage < "%~dp0seeds.sql"
 if errorlevel 1 exit /b 1
 
+echo Recording migrations (schema is up to date)...
+php "%~dp0migrate.php" stamp
+if errorlevel 1 exit /b 1
+
 echo.
 echo Done. Testing connection...
 php "%~dp0test_connection.php"

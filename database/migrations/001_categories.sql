@@ -1,9 +1,4 @@
--- =============================================================================
--- DEPRECATED — use: php database/migrate.php
--- File moved to: database/migrations/001_categories.sql
--- =============================================================================
-
-USE stock_manage;
+-- Migration: Item categories table (replaces ENUM on items.category)
 
 CREATE TABLE IF NOT EXISTS categories (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -23,7 +18,6 @@ INSERT IGNORE INTO categories (name, sort_order) VALUES
     ('Gelato', 2),
     ('Icecream', 3);
 
--- Skip migration steps if category_id already exists
 SET @has_category_id = (
     SELECT COUNT(*) FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()

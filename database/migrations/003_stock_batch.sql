@@ -1,9 +1,4 @@
--- =============================================================================
--- DEPRECATED — use: php database/migrate.php
--- File moved to: database/migrations/003_stock_batch.sql
--- =============================================================================
-
-USE stock_manage;
+-- Migration: batch_ref for multi-item Stock In/Out submissions
 
 SET @has_si_batch = (
     SELECT COUNT(*) FROM information_schema.COLUMNS

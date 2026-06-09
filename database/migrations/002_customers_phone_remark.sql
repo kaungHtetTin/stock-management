@@ -1,9 +1,4 @@
--- =============================================================================
--- DEPRECATED — use: php database/migrate.php
--- File moved to: database/migrations/002_customers_phone_remark.sql
--- =============================================================================
-
-USE stock_manage;
+-- Migration: Add phone and remark to customers
 
 SET @has_phone = (
     SELECT COUNT(*) FROM information_schema.COLUMNS
