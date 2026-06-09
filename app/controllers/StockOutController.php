@@ -82,21 +82,21 @@ class StockOutController
         require_login();
         require_csrf('pages/stock-out/create.php');
 
-        $data = StockOut::normalize($_POST);
-        $errors = StockOut::validate($_POST);
+        $errors = StockOut::validateSubmission($_POST);
 
         if ($errors) {
-            $_SESSION['form_old'] = $data;
+            $_SESSION['form_old'] = StockOut::normalizeSubmission($_POST);
             flash('error', implode(' ', $errors));
             redirect('pages/stock-out/create.php');
         }
 
         $userId = (int) current_user()['id'];
-        StockOut::create(StockOut::createPayload($data, $userId));
+        $result = StockOut::createMany($_POST, $userId);
+        $count = count($result['ids']);
 
         $msg = is_admin()
-            ? 'Stock Out recorded and approved.'
-            : 'Stock Out request submitted for approval.';
+            ? "Stock Out recorded and approved ({$count} item" . ($count > 1 ? 's' : '') . ').'
+            : "Stock Out request submitted for approval ({$count} item" . ($count > 1 ? 's' : '') . ').';
         flash('success', $msg);
         redirect('pages/stock-out/index.php');
     }

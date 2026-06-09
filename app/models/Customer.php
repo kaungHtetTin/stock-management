@@ -16,8 +16,8 @@ class Customer
         $params = [];
 
         if (!empty($filters['q'])) {
-            $sql .= ' AND (customer_code LIKE :q1 OR customer_name LIKE :q2)';
-            $params['q1'] = $params['q2'] = '%' . $filters['q'] . '%';
+            $sql .= ' AND (customer_code LIKE :q1 OR customer_name LIKE :q2 OR phone LIKE :q3)';
+            $params['q1'] = $params['q2'] = $params['q3'] = '%' . $filters['q'] . '%';
         }
 
         if (!empty($filters['type']) && in_array($filters['type'], self::TYPES, true)) {
@@ -66,13 +66,15 @@ class Customer
     {
         $db = Database::connect();
         $stmt = $db->prepare(
-            'INSERT INTO customers (customer_code, customer_name, address, customer_type, created_by)
-             VALUES (:customer_code, :customer_name, :address, :customer_type, :created_by)'
+            'INSERT INTO customers (customer_code, customer_name, phone, address, remark, customer_type, created_by)
+             VALUES (:customer_code, :customer_name, :phone, :address, :remark, :customer_type, :created_by)'
         );
         $stmt->execute([
             'customer_code'  => $data['customer_code'],
             'customer_name'  => $data['customer_name'],
-            'address'        => $data['address'],
+            'phone'          => $data['phone'] ?? null,
+            'address'        => $data['address'] ?? null,
+            'remark'         => $data['remark'] ?? null,
             'customer_type'  => $data['customer_type'],
             'created_by'     => $data['created_by'],
         ]);
@@ -87,7 +89,9 @@ class Customer
             'UPDATE customers SET
                 customer_code = :customer_code,
                 customer_name = :customer_name,
+                phone = :phone,
                 address = :address,
+                remark = :remark,
                 customer_type = :customer_type
              WHERE id = :id AND is_active = 1'
         );
@@ -96,7 +100,9 @@ class Customer
             'id'             => $id,
             'customer_code'  => $data['customer_code'],
             'customer_name'  => $data['customer_name'],
-            'address'        => $data['address'],
+            'phone'          => $data['phone'] ?? null,
+            'address'        => $data['address'] ?? null,
+            'remark'         => $data['remark'] ?? null,
             'customer_type'  => $data['customer_type'],
         ]);
     }
@@ -137,6 +143,11 @@ class Customer
             $errors[] = 'Please select a valid customer type.';
         }
 
+        $phone = trim($input['phone'] ?? '');
+        if ($phone !== '' && strlen($phone) > 30) {
+            $errors[] = 'Phone must be 30 characters or less.';
+        }
+
         return $errors;
     }
 
@@ -145,7 +156,9 @@ class Customer
         return [
             'customer_code' => trim($input['customer_code'] ?? ''),
             'customer_name' => trim($input['customer_name'] ?? ''),
+            'phone'         => trim($input['phone'] ?? '') ?: null,
             'address'       => trim($input['address'] ?? '') ?: null,
+            'remark'        => trim($input['remark'] ?? '') ?: null,
             'customer_type' => $input['customer_type'] ?? '',
         ];
     }

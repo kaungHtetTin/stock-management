@@ -21,10 +21,20 @@ page_header(
             <input type="text" class="form-control" name="customer_name"
                    value="<?= e($customer['customer_name'] ?? '') ?>" required>
         </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-control" name="phone"
+                   value="<?= e($customer['phone'] ?? '') ?>" placeholder="e.g. 09xxxxxxxxx" maxlength="30">
+        </div>
         <div class="col-12">
             <label class="form-label">Customer Address</label>
             <textarea class="form-control" name="address" rows="2"
                       placeholder="Full address"><?= e($customer['address'] ?? '') ?></textarea>
+        </div>
+        <div class="col-12">
+            <label class="form-label">Remark</label>
+            <textarea class="form-control" name="remark" rows="2"
+                      placeholder="Notes about this customer"><?= e($customer['remark'] ?? '') ?></textarea>
         </div>
         <div class="col-12 col-md-4">
             <label class="form-label">Customer Type <span class="required">*</span></label>

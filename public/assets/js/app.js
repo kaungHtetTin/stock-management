@@ -111,14 +111,101 @@
         });
     });
 
-    /* Item select auto-fill (forms) */
+    /* Item select auto-fill (forms / line rows) */
     $(document).on('change', '[data-item-select]', function () {
         const $opt = $(this).find('option:selected');
         const unit = $opt.data('unit') || '';
         const name = $opt.data('name') || '';
-        const $form = $(this).closest('form');
-        $form.find('[data-item-name]').val(name);
-        $form.find('[data-item-unit]').val(unit);
+        const balance = $opt.data('balance');
+        const $row = $(this).closest('[data-line-row]');
+        const $scope = $row.length ? $row : $(this).closest('form');
+
+        $scope.find('[data-item-name]').val(name);
+        $scope.find('[data-item-unit]').val(unit);
+        if (balance !== undefined) {
+            $scope.find('[data-item-balance]').val(balance);
+        }
+    });
+
+    /* Multi-line stock forms — clone rows, document-level handlers */
+    function stockLinesScope($el) {
+        return $el.closest('[data-stock-lines]');
+    }
+
+    function stockLinesContainer($scope) {
+        return $scope.find('[data-line-container]').first();
+    }
+
+    function clearStockLineRow($row) {
+        $row.find('input, select, textarea').each(function () {
+            if (this.tagName === 'SELECT') {
+                this.selectedIndex = 0;
+            } else {
+                $(this).val('');
+            }
+        });
+    }
+
+    function reindexStockLines($container) {
+        const $rows = $container.find('[data-line-row]');
+        const canRemove = $rows.length > 1;
+
+        $rows.each(function (i) {
+            const $row = $(this);
+            $row.find('[name]').each(function () {
+                const name = this.getAttribute('name');
+                if (name) {
+                    this.setAttribute('name', name.replace(/lines\[[^\]]+\]/, 'lines[' + i + ']'));
+                }
+            });
+            $row.find('[data-line-number]').text(i + 1);
+            $row.find('[data-remove-line]')
+                .prop('disabled', !canRemove)
+                .attr('aria-disabled', canRemove ? 'false' : 'true');
+        });
+    }
+
+    $(document).on('click', '[data-add-line]', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const $scope = stockLinesScope($(this));
+        const $container = stockLinesContainer($scope);
+        const $first = $container.find('[data-line-row]').first();
+
+        if (!$scope.length || !$first.length) {
+            return;
+        }
+
+        const $clone = $first.clone(false);
+        clearStockLineRow($clone);
+        $container.append($clone);
+        reindexStockLines($container);
+    });
+
+    $(document).on('click', '[data-remove-line]', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (this.disabled) {
+            return;
+        }
+
+        const $scope = stockLinesScope($(this));
+        const $container = stockLinesContainer($scope);
+
+        if ($container.find('[data-line-row]').length <= 1) {
+            return;
+        }
+
+        $(this).closest('[data-line-row]').remove();
+        reindexStockLines($container);
+    });
+
+    $(function () {
+        $('[data-line-container]').each(function () {
+            reindexStockLines($(this));
+        });
     });
 
     /* Chart defaults */

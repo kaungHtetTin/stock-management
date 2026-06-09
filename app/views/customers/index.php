@@ -7,7 +7,7 @@ ob_start();
 ?>
 <div class="col-12 col-md-4">
     <label class="form-label">Search</label>
-    <input type="text" class="form-control" name="q" placeholder="Code or name..."
+    <input type="text" class="form-control" name="q" placeholder="Code, name, or phone..."
            value="<?= e($filters['q']) ?>">
 </div>
 <div class="col-12 col-md-3">
@@ -38,7 +38,9 @@ require APP_PATH . '/views/partials/search-card.php';
                 <tr>
                     <th>Code</th>
                     <th>Name</th>
+                    <th>Phone</th>
                     <th>Address</th>
+                    <th>Remark</th>
                     <th>Type</th>
                     <th>Created</th>
                     <?php if (is_admin()): ?><th>Actions</th><?php endif; ?>
@@ -47,7 +49,7 @@ require APP_PATH . '/views/partials/search-card.php';
             <tbody>
                 <?php if (empty($customers)): ?>
                 <tr>
-                    <td colspan="<?= is_admin() ? 6 : 5 ?>" class="text-center text-muted py-5">
+                    <td colspan="<?= is_admin() ? 8 : 7 ?>" class="text-center text-muted py-5">
                         <i class="bi bi-inbox d-block fs-2 mb-2 opacity-50"></i>
                         No customers found.<?php if (is_admin()): ?> <a href="<?= base_url('pages/customers/create.php') ?>">Add your first customer</a>.<?php endif; ?>
                     </td>
@@ -57,7 +59,9 @@ require APP_PATH . '/views/partials/search-card.php';
                 <tr>
                     <td data-label="Code"><span class="text-code"><?= e($row['customer_code']) ?></span></td>
                     <td data-label="Name"><?= e($row['customer_name']) ?></td>
+                    <td data-label="Phone"><span class="small"><?= e($row['phone'] ?? '') ?></span></td>
                     <td data-label="Address"><span class="small"><?= e($row['address']) ?></span></td>
+                    <td data-label="Remark"><span class="small text-muted"><?= e($row['remark'] ?? '') ?></span></td>
                     <td data-label="Type"><?= customer_type_badge($row['customer_type']) ?></td>
                     <td data-label="Created"><span class="small text-muted"><?= format_datetime($row['created_at']) ?></span></td>
                     <?php if (is_admin()): ?>

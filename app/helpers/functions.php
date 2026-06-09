@@ -125,6 +125,11 @@ function render_app(string $view, array $data = []): void
     include APP_PATH . '/views/layouts/app.php';
 }
 
+function generate_batch_ref(): string
+{
+    return bin2hex(random_bytes(16));
+}
+
 function report_query_string(array $filters, array $extra = []): string
 {
     $params = array_merge($filters, $extra, ['generate' => 1]);

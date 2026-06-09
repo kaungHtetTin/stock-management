@@ -21,6 +21,3 @@ require APP_PATH . '/views/layouts/header.php';
     </div>
 </div>
 <?php require APP_PATH . '/views/layouts/footer.php'; ?>
-<?php if (!empty($footerScript)): ?>
-<script><?= $footerScript ?></script>
-<?php endif; ?>

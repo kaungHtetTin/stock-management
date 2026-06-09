@@ -5,6 +5,7 @@
 
 require_once APP_PATH . '/models/StockIn.php';
 require_once APP_PATH . '/models/StockOut.php';
+require_once APP_PATH . '/models/Item.php';
 require_once APP_PATH . '/services/BalanceService.php';
 
 class ApprovalService
@@ -19,11 +20,21 @@ class ApprovalService
             return ['ok' => false, 'message' => 'Only pending records can be approved.'];
         }
 
-        if (!StockIn::approve($id, $adminId)) {
+        $ids = StockIn::resolvePendingBatchIds($id);
+        if (empty($ids)) {
+            return ['ok' => false, 'message' => 'Only pending records can be approved.'];
+        }
+
+        if (!StockIn::approveBatch($ids, $adminId)) {
             return ['ok' => false, 'message' => 'Unable to approve record.'];
         }
 
-        return ['ok' => true, 'message' => 'Stock In approved successfully.'];
+        $count = count($ids);
+        $message = $count > 1
+            ? "Stock In batch approved successfully ({$count} items)."
+            : 'Stock In approved successfully.';
+
+        return ['ok' => true, 'message' => $message];
     }
 
     public static function rejectStockIn(int $id, int $adminId, string $reason): array
@@ -41,11 +52,21 @@ class ApprovalService
             return ['ok' => false, 'message' => 'Only pending records can be rejected.'];
         }
 
-        if (!StockIn::reject($id, $reason)) {
+        $ids = StockIn::resolvePendingBatchIds($id);
+        if (empty($ids)) {
+            return ['ok' => false, 'message' => 'Only pending records can be rejected.'];
+        }
+
+        if (!StockIn::rejectBatch($ids, $reason)) {
             return ['ok' => false, 'message' => 'Unable to reject record.'];
         }
 
-        return ['ok' => true, 'message' => 'Stock In request rejected.'];
+        $count = count($ids);
+        $message = $count > 1
+            ? "Stock In batch rejected ({$count} items)."
+            : 'Stock In request rejected.';
+
+        return ['ok' => true, 'message' => $message];
     }
 
     public static function approveStockOut(int $id, int $adminId): array
@@ -58,26 +79,55 @@ class ApprovalService
             return ['ok' => false, 'message' => 'Only pending records can be approved.'];
         }
 
-        $balance = BalanceService::getItemBalance((int) $record['item_id']);
-        $qty = (float) $record['qty'];
-        if ($qty > $balance) {
-            return [
-                'ok' => false,
-                'message' => sprintf(
-                    'Insufficient stock. Available: %s %s, requested: %s %s.',
-                    format_number($balance, 2),
-                    $record['unit'],
-                    format_number($qty, 2),
-                    $record['unit']
-                ),
-            ];
+        $ids = StockOut::resolvePendingBatchIds($id);
+        if (empty($ids)) {
+            return ['ok' => false, 'message' => 'Only pending records can be approved.'];
         }
 
-        if (!StockOut::approve($id, $adminId)) {
+        $qtyByItem = [];
+        $unitByItem = [];
+
+        foreach ($ids as $recordId) {
+            $row = StockOut::find($recordId);
+            if (!$row) {
+                return ['ok' => false, 'message' => 'Record not found.'];
+            }
+
+            $itemId = (int) $row['item_id'];
+            $qtyByItem[$itemId] = ($qtyByItem[$itemId] ?? 0) + (float) $row['qty'];
+            $unitByItem[$itemId] = $row['unit'];
+        }
+
+        foreach ($qtyByItem as $itemId => $totalQty) {
+            $balance = BalanceService::getItemBalance($itemId);
+            if ($totalQty > $balance) {
+                $item = Item::find($itemId);
+                $label = $item ? $item['item_name'] : 'Item';
+
+                return [
+                    'ok' => false,
+                    'message' => sprintf(
+                        'Insufficient stock for %s. Available: %s %s, requested: %s %s.',
+                        $label,
+                        format_number($balance, 2),
+                        $unitByItem[$itemId] ?? '',
+                        format_number($totalQty, 2),
+                        $unitByItem[$itemId] ?? ''
+                    ),
+                ];
+            }
+        }
+
+        if (!StockOut::approveBatch($ids, $adminId)) {
             return ['ok' => false, 'message' => 'Unable to approve record.'];
         }
 
-        return ['ok' => true, 'message' => 'Stock Out approved successfully.'];
+        $count = count($ids);
+        $message = $count > 1
+            ? "Stock Out batch approved successfully ({$count} items)."
+            : 'Stock Out approved successfully.';
+
+        return ['ok' => true, 'message' => $message];
     }
 
     public static function rejectStockOut(int $id, int $adminId, string $reason): array
@@ -95,10 +145,20 @@ class ApprovalService
             return ['ok' => false, 'message' => 'Only pending records can be rejected.'];
         }
 
-        if (!StockOut::reject($id, $reason)) {
+        $ids = StockOut::resolvePendingBatchIds($id);
+        if (empty($ids)) {
+            return ['ok' => false, 'message' => 'Only pending records can be rejected.'];
+        }
+
+        if (!StockOut::rejectBatch($ids, $reason)) {
             return ['ok' => false, 'message' => 'Unable to reject record.'];
         }
 
-        return ['ok' => true, 'message' => 'Stock Out request rejected.'];
+        $count = count($ids);
+        $message = $count > 1
+            ? "Stock Out batch rejected ({$count} items)."
+            : 'Stock Out request rejected.';
+
+        return ['ok' => true, 'message' => $message];
     }
 }

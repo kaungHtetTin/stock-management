@@ -12,6 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require APP_PATH . '/config/database.php';
+require APP_PATH . '/helpers/functions.php';
 require APP_PATH . '/helpers/Database.php';
 require APP_PATH . '/helpers/session.php';
 require APP_PATH . '/models/User.php';
@@ -26,7 +27,7 @@ echo str_repeat('=', 44) . "\n\n";
 
 $passed = 0;
 $failed = 0;
-$ids = ['item' => null, 'customer' => null, 'stock_in' => [], 'stock_out' => []];
+$ids = ['item' => null, 'customer' => null, 'item2' => null, 'stock_in' => [], 'stock_out' => []];
 
 function assert_test(string $label, bool $ok): void
 {
@@ -169,6 +170,46 @@ try {
 
     assert_test('countPending includes records', StockIn::countPending() >= 0 && StockOut::countPending() >= 0);
 
+    set_session_user($adminSession);
+    $multiIn = StockIn::createMany([
+        'in_charge_name' => 'Batch Handler',
+        'lines' => [
+            array_merge($stockInInput, ['qty' => 20, 'lot_no' => 'LOT-M1']),
+            array_merge($stockInInput, ['qty' => 30, 'lot_no' => 'LOT-M2']),
+        ],
+    ], (int) $admin['id']);
+    assert_test('Multi Stock In creates two records', count($multiIn['ids']) === 2);
+    assert_test('Multi Stock In shares batch_ref', !empty($multiIn['batch_ref']));
+    foreach ($multiIn['ids'] as $multiInId) {
+        $ids['stock_in'][] = $multiInId;
+    }
+
+    $ids['item2'] = Item::create([
+        'item_no'     => 'TEST-P3B-' . time(),
+        'item_name'   => 'Phase 3 Second Item',
+        'unit'        => 'kg',
+        'unit_price'  => 500,
+        'category_id' => test_category_id('Fruits'),
+        'remark'      => 'Phase 3 batch test',
+        'created_by'  => (int) $admin['id'],
+    ]);
+    $item2Id = $ids['item2'];
+
+    $multiOut = StockOut::createMany([
+        'customer_id' => $customerId,
+        'reason'      => 'Sales',
+        'remark'      => null,
+        'lines'       => [
+            ['item_id' => $itemId, 'mfd_date' => '2026-01-01', 'qty' => 2, 'unit' => 'kg'],
+            ['item_id' => $item2Id, 'mfd_date' => '2026-01-01', 'qty' => 3, 'unit' => 'kg'],
+        ],
+    ], (int) $admin['id']);
+    assert_test('Multi Stock Out creates two records', count($multiOut['ids']) === 2);
+    assert_test('Multi Stock Out shares batch_ref', !empty($multiOut['batch_ref']));
+    foreach ($multiOut['ids'] as $multiOutId) {
+        $ids['stock_out'][] = $multiOutId;
+    }
+
 } catch (Throwable $e) {
     echo "[FAIL] Exception: " . $e->getMessage() . "\n";
     $failed++;
@@ -180,6 +221,9 @@ try {
     }
     foreach ($ids['stock_in'] as $id) {
         $db->prepare('DELETE FROM stock_in WHERE id = :id')->execute(['id' => $id]);
+    }
+    if ($ids['item2']) {
+        $db->prepare('DELETE FROM items WHERE id = :id')->execute(['id' => $ids['item2']]);
     }
     if ($ids['item']) {
         $db->prepare('DELETE FROM items WHERE id = :id')->execute(['id' => $ids['item']]);

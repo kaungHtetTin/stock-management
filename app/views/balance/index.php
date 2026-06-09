@@ -27,12 +27,12 @@ $resetUrl = base_url('pages/balance/index.php');
 require APP_PATH . '/views/partials/search-card.php';
 ?>
 
-<div class="row g-3 g-md-4 mb-4">
-    <div class="col-lg-7">
+<div class="row g-3 g-md-4 mb-3 mb-md-4">
+    <div class="col-12">
         <div class="card card-polished table-card">
-            <div class="card-header card-header-polished">
+            <div class="card-header card-header-polished flex-wrap gap-2">
                 <span>Current Stock <span class="text-muted fw-normal">(<?= count($balances) ?> items)</span></span>
-                <input type="text" class="form-control form-control-sm" id="tableSearch"
+                <input type="text" class="form-control form-control-sm ms-lg-auto" id="tableSearch"
                        placeholder="Quick filter..." style="max-width:220px">
             </div>
             <div class="table-responsive">
@@ -82,9 +82,11 @@ require APP_PATH . '/views/partials/search-card.php';
             </div>
         </div>
     </div>
+</div>
 
-    <div class="col-lg-5">
-        <div class="card card-polished mb-4">
+<div class="row g-3 g-md-4 mb-4">
+    <div class="col-12 col-lg-6">
+        <div class="card card-polished h-100">
             <div class="card-header card-header-polished">
                 <div class="card-header-title">
                     <span class="card-header-icon"><i class="bi bi-bar-chart-fill"></i></span>
@@ -97,8 +99,10 @@ require APP_PATH . '/views/partials/search-card.php';
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="card card-polished">
+    <div class="col-12 col-lg-6">
+        <div class="card card-polished h-100">
             <div class="card-header card-header-polished">
                 <div class="card-header-title">
                     <span class="card-header-icon"><i class="bi bi-pie-chart"></i></span>
@@ -106,7 +110,7 @@ require APP_PATH . '/views/partials/search-card.php';
                 </div>
             </div>
             <div class="card-body">
-                <div class="chart-container" style="height:240px">
+                <div class="chart-container">
                     <canvas id="balanceDoughnutChart"></canvas>
                 </div>
             </div>

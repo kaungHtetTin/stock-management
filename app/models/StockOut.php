@@ -15,7 +15,9 @@ class StockOut
     public static function all(array $filters = []): array
     {
         $db = Database::connect();
-        $sql = 'SELECT so.*, i.item_no, i.item_name, c.customer_name, u.display_name AS created_by_name
+        $sql = 'SELECT so.*, i.item_no, i.item_name, c.customer_name, u.display_name AS created_by_name,
+                (SELECT COUNT(*) FROM stock_out so2
+                 WHERE so.batch_ref IS NOT NULL AND so2.batch_ref = so.batch_ref) AS batch_size
                 FROM stock_out so
                 INNER JOIN items i ON i.id = so.item_id
                 INNER JOIN customers c ON c.id = so.customer_id
@@ -84,16 +86,46 @@ class StockOut
         $db = Database::connect();
         $stmt = $db->prepare(
             'INSERT INTO stock_out (
-                item_id, customer_id, mfd_date, qty, unit, reason, remark,
+                batch_ref, item_id, customer_id, mfd_date, qty, unit, reason, remark,
                 status, created_by, approved_by, approved_at
              ) VALUES (
-                :item_id, :customer_id, :mfd_date, :qty, :unit, :reason, :remark,
+                :batch_ref, :item_id, :customer_id, :mfd_date, :qty, :unit, :reason, :remark,
                 :status, :created_by, :approved_by, :approved_at
              )'
         );
         $stmt->execute($data);
 
         return (int) $db->lastInsertId();
+    }
+
+    public static function createMany(array $input, int $userId): array
+    {
+        $lines = self::parseLines($input);
+        $header = [
+            'customer_id' => (int) ($input['customer_id'] ?? 0),
+            'reason'      => $input['reason'] ?? '',
+            'remark'      => trim($input['remark'] ?? '') ?: null,
+        ];
+        $batchRef = count($lines) > 1 ? generate_batch_ref() : null;
+        $db = Database::connect();
+        $db->beginTransaction();
+
+        try {
+            $ids = [];
+            foreach ($lines as $line) {
+                $payload = self::createPayload(
+                    array_merge(self::normalizeLine($line), $header, ['batch_ref' => $batchRef]),
+                    $userId
+                );
+                $ids[] = self::create($payload);
+            }
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
+        return ['batch_ref' => $batchRef, 'ids' => $ids];
     }
 
     public static function update(int $id, array $data): bool
@@ -127,6 +159,31 @@ class StockOut
         return (int) $db->query("SELECT COUNT(*) FROM stock_out WHERE status = 'pending'")->fetchColumn();
     }
 
+    public static function pendingIdsByBatchRef(string $batchRef): array
+    {
+        $db = Database::connect();
+        $stmt = $db->prepare(
+            "SELECT id FROM stock_out WHERE batch_ref = :batch_ref AND status = 'pending' ORDER BY id ASC"
+        );
+        $stmt->execute(['batch_ref' => $batchRef]);
+
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public static function resolvePendingBatchIds(int $id): array
+    {
+        $record = self::find($id);
+        if (!$record || ($record['status'] ?? '') !== 'pending') {
+            return [];
+        }
+
+        if (!empty($record['batch_ref'])) {
+            return self::pendingIdsByBatchRef($record['batch_ref']);
+        }
+
+        return [$id];
+    }
+
     public static function approve(int $id, int $adminId): bool
     {
         $db = Database::connect();
@@ -144,6 +201,45 @@ class StockOut
             'approved_by' => $adminId,
             'approved_at' => date('Y-m-d H:i:s'),
         ]);
+    }
+
+    public static function approveBatch(array $ids, int $adminId): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        $db = Database::connect();
+        $db->beginTransaction();
+        $now = date('Y-m-d H:i:s');
+
+        try {
+            $stmt = $db->prepare(
+                'UPDATE stock_out SET
+                    status = \'approved\',
+                    rejection_reason = NULL,
+                    approved_by = :approved_by,
+                    approved_at = :approved_at
+                 WHERE id = :id AND status = \'pending\''
+            );
+
+            foreach ($ids as $id) {
+                $stmt->execute([
+                    'id'          => $id,
+                    'approved_by' => $adminId,
+                    'approved_at' => $now,
+                ]);
+                if ($stmt->rowCount() === 0) {
+                    throw new RuntimeException('Unable to approve stock out record.');
+                }
+            }
+
+            $db->commit();
+            return true;
+        } catch (Throwable $e) {
+            $db->rollBack();
+            return false;
+        }
     }
 
     public static function reject(int $id, string $reason): bool
@@ -164,6 +260,43 @@ class StockOut
         ]);
     }
 
+    public static function rejectBatch(array $ids, string $reason): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        $db = Database::connect();
+        $db->beginTransaction();
+
+        try {
+            $stmt = $db->prepare(
+                'UPDATE stock_out SET
+                    status = \'rejected\',
+                    rejection_reason = :rejection_reason,
+                    approved_by = NULL,
+                    approved_at = NULL
+                 WHERE id = :id AND status = \'pending\''
+            );
+
+            foreach ($ids as $id) {
+                $stmt->execute([
+                    'id'               => $id,
+                    'rejection_reason' => $reason,
+                ]);
+                if ($stmt->rowCount() === 0) {
+                    throw new RuntimeException('Unable to reject stock out record.');
+                }
+            }
+
+            $db->commit();
+            return true;
+        } catch (Throwable $e) {
+            $db->rollBack();
+            return false;
+        }
+    }
+
     public static function canModify(array $record): bool
     {
         if (($record['status'] ?? '') !== 'pending') {
@@ -173,6 +306,27 @@ class StockOut
             return true;
         }
         return (int) ($record['raw_created_by'] ?? 0) === (int) (current_user()['id'] ?? 0);
+    }
+
+    public static function parseLines(array $input): array
+    {
+        if (!empty($input['lines']) && is_array($input['lines'])) {
+            $lines = [];
+            foreach ($input['lines'] as $line) {
+                if (!is_array($line) || empty($line['item_id'])) {
+                    continue;
+                }
+                $lines[] = $line;
+            }
+
+            return $lines;
+        }
+
+        if (!empty($input['item_id'])) {
+            return [$input];
+        }
+
+        return [];
     }
 
     public static function validate(array $input): array
@@ -212,16 +366,89 @@ class StockOut
         return $errors;
     }
 
+    public static function validateSubmission(array $input): array
+    {
+        $errors = [];
+        $lines = self::parseLines($input);
+
+        if (empty($lines)) {
+            $errors[] = 'Add at least one item line.';
+            return $errors;
+        }
+
+        $customerId = (int) ($input['customer_id'] ?? 0);
+        if ($customerId <= 0 || !Customer::find($customerId)) {
+            $errors[] = 'Please select a valid customer.';
+        }
+
+        $reason = $input['reason'] ?? '';
+        $remark = trim($input['remark'] ?? '');
+
+        if (!in_array($reason, self::REASONS, true)) {
+            $errors[] = 'Please select a valid reason.';
+        }
+
+        if ($reason === 'Other' && $remark === '') {
+            $errors[] = 'Remark is required when reason is Other.';
+        }
+
+        foreach ($lines as $index => $line) {
+            $errors = array_merge($errors, self::validateLine($line, $index + 1));
+        }
+
+        return $errors;
+    }
+
+    public static function validateLine(array $line, int $lineNo): array
+    {
+        $errors = [];
+        $prefix = "Line {$lineNo}: ";
+
+        $itemId = (int) ($line['item_id'] ?? 0);
+        $qty = $line['qty'] ?? '';
+        $unit = trim($line['unit'] ?? '');
+
+        if ($itemId <= 0 || !Item::find($itemId)) {
+            $errors[] = $prefix . 'Please select a valid item.';
+        }
+
+        if (!is_numeric($qty) || (float) $qty <= 0) {
+            $errors[] = $prefix . 'Quantity must be greater than zero.';
+        }
+
+        if ($unit === '') {
+            $errors[] = $prefix . 'Unit is required.';
+        }
+
+        return $errors;
+    }
+
     public static function normalize(array $input): array
     {
-        return [
-            'item_id'     => (int) ($input['item_id'] ?? 0),
+        return array_merge(self::normalizeLine($input), [
             'customer_id' => (int) ($input['customer_id'] ?? 0),
-            'mfd_date'    => ($input['mfd_date'] ?? '') ?: null,
-            'qty'         => (float) ($input['qty'] ?? 0),
-            'unit'        => trim($input['unit'] ?? ''),
             'reason'      => $input['reason'] ?? '',
             'remark'      => trim($input['remark'] ?? '') ?: null,
+        ]);
+    }
+
+    public static function normalizeLine(array $line): array
+    {
+        return [
+            'item_id'  => (int) ($line['item_id'] ?? 0),
+            'mfd_date' => ($line['mfd_date'] ?? '') ?: null,
+            'qty'      => (float) ($line['qty'] ?? 0),
+            'unit'     => trim($line['unit'] ?? ''),
+        ];
+    }
+
+    public static function normalizeSubmission(array $input): array
+    {
+        return [
+            'customer_id' => (int) ($input['customer_id'] ?? 0),
+            'reason'      => $input['reason'] ?? '',
+            'remark'      => trim($input['remark'] ?? '') ?: null,
+            'lines'       => array_map([self::class, 'normalizeLine'], self::parseLines($input)),
         ];
     }
 
@@ -236,6 +463,7 @@ class StockOut
         $approved = $status === 'approved';
 
         return array_merge($data, [
+            'batch_ref'   => $data['batch_ref'] ?? null,
             'status'      => $status,
             'created_by'  => $userId,
             'approved_by' => $approved ? $userId : null,
@@ -247,6 +475,7 @@ class StockOut
     {
         $row['raw_created_by'] = $row['created_by'];
         $row['created_by'] = $row['created_by_name'];
+        $row['batch_size'] = (int) ($row['batch_size'] ?? 1);
         return $row;
     }
 }

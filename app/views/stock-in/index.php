@@ -74,6 +74,11 @@ require APP_PATH . '/views/partials/search-card.php';
                     <td data-label="Item">
                         <span class="text-code"><?= e($row['item_no']) ?></span><br>
                         <span class="small"><?= e($row['item_name']) ?></span>
+                        <?php if (($row['batch_size'] ?? 1) > 1): ?>
+                        <span class="badge bg-secondary-subtle text-secondary ms-1" title="Part of a multi-item submission">
+                            Batch (<?= (int) $row['batch_size'] ?>)
+                        </span>
+                        <?php endif; ?>
                     </td>
                     <td data-label="Lot"><?= e($row['lot_no'] ?: '—') ?></td>
                     <td data-label="MFD"><?= format_date($row['mfd_date']) ?></td>
@@ -98,14 +103,14 @@ require APP_PATH . '/views/partials/search-card.php';
                             <button class="btn-action success" title="Approve"
                                     data-approve
                                     data-approve-url="<?= base_url('pages/stock-in/index.php?approve=' . $row['id']) ?>"
-                                    data-name="<?= e($row['item_name']) ?>">
+                                    data-name="<?= e($row['item_name']) ?><?= ($row['batch_size'] ?? 1) > 1 ? ' (batch of ' . (int) $row['batch_size'] . ')' : '' ?>">
                                 <i class="bi bi-check-lg"></i>
                             </button>
                             <button class="btn-action danger" title="Reject"
                                     data-reject
                                     data-reject-id="<?= $row['id'] ?>"
                                     data-reject-url="<?= base_url('pages/stock-in/index.php') ?>"
-                                    data-name="<?= e($row['item_name']) ?>">
+                                    data-name="<?= e($row['item_name']) ?><?= ($row['batch_size'] ?? 1) > 1 ? ' (batch of ' . (int) $row['batch_size'] . ')' : '' ?>">
                                 <i class="bi bi-x-lg"></i>
                             </button>
                             <?php endif; ?>

@@ -72,21 +72,21 @@ class StockInController
         require_login();
         require_csrf('pages/stock-in/create.php');
 
-        $data = StockIn::normalize($_POST);
-        $errors = StockIn::validate($_POST);
+        $errors = StockIn::validateSubmission($_POST);
 
         if ($errors) {
-            $_SESSION['form_old'] = $data;
+            $_SESSION['form_old'] = StockIn::normalizeSubmission($_POST);
             flash('error', implode(' ', $errors));
             redirect('pages/stock-in/create.php');
         }
 
         $userId = (int) current_user()['id'];
-        StockIn::create(StockIn::createPayload($data, $userId));
+        $result = StockIn::createMany($_POST, $userId);
+        $count = count($result['ids']);
 
         $msg = is_admin()
-            ? 'Stock In recorded and approved.'
-            : 'Stock In request submitted for approval.';
+            ? "Stock In recorded and approved ({$count} item" . ($count > 1 ? 's' : '') . ').'
+            : "Stock In request submitted for approval ({$count} item" . ($count > 1 ? 's' : '') . ').';
         flash('success', $msg);
         redirect('pages/stock-in/index.php');
     }

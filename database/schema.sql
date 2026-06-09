@@ -81,7 +81,9 @@ CREATE TABLE IF NOT EXISTS customers (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     customer_code   VARCHAR(30)  NOT NULL,
     customer_name   VARCHAR(150) NOT NULL,
+    phone           VARCHAR(30)  NULL,
     address         TEXT NULL,
+    remark          TEXT NULL,
     customer_type   ENUM('Retail', 'Whole Sale') NOT NULL DEFAULT 'Retail',
     is_active       TINYINT(1) NOT NULL DEFAULT 1,
     created_by      INT UNSIGNED NULL,
@@ -104,6 +106,7 @@ CREATE TABLE IF NOT EXISTS customers (
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS stock_in (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    batch_ref           VARCHAR(36) NULL DEFAULT NULL,
     item_id             INT UNSIGNED NOT NULL,
     mfd_date            DATE NULL DEFAULT NULL,
     expire_date         DATE NULL DEFAULT NULL,
@@ -121,6 +124,7 @@ CREATE TABLE IF NOT EXISTS stock_in (
     updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     KEY idx_stock_in_item (item_id),
+    KEY idx_stock_in_batch (batch_ref),
     KEY idx_stock_in_status (status),
     KEY idx_stock_in_created_at (created_at),
     KEY idx_stock_in_lot (lot_no),
@@ -145,6 +149,7 @@ CREATE TABLE IF NOT EXISTS stock_in (
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS stock_out (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    batch_ref           VARCHAR(36) NULL DEFAULT NULL,
     item_id             INT UNSIGNED NOT NULL,
     customer_id         INT UNSIGNED NOT NULL,
     mfd_date            DATE NULL DEFAULT NULL,
@@ -161,6 +166,7 @@ CREATE TABLE IF NOT EXISTS stock_out (
     updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     KEY idx_stock_out_item (item_id),
+    KEY idx_stock_out_batch (batch_ref),
     KEY idx_stock_out_customer (customer_id),
     KEY idx_stock_out_status (status),
     KEY idx_stock_out_reason (reason),
