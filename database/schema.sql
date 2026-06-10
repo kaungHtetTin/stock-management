@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS customers (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     customer_code   VARCHAR(30)  NOT NULL,
     customer_name   VARCHAR(150) NOT NULL,
+    contact_person  VARCHAR(100) NULL,
     phone           VARCHAR(30)  NULL,
     address         TEXT NULL,
     remark          TEXT NULL,

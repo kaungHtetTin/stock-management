@@ -62,13 +62,14 @@ try {
     assert_test('Duplicate item_no rejected', !empty(Item::validate($itemData)));
 
     $customerData = [
-        'customer_code' => 'TEST-P2-' . time(),
-        'customer_name' => 'Phase 2 Test Customer',
-        'phone'         => '09123456789',
-        'address'       => 'Yangon',
-        'remark'        => 'Test remark',
-        'customer_type' => 'Retail',
-        'created_by'    => 1,
+        'customer_code'  => 'TEST-P2-' . time(),
+        'customer_name'  => 'Phase 2 Test Customer',
+        'contact_person' => 'U Test Contact',
+        'phone'          => '09123456789',
+        'address'        => 'Yangon',
+        'remark'         => 'Test remark',
+        'customer_type'  => 'Retail',
+        'created_by'     => 1,
     ];
 
     assert_test('Customer validation passes', empty(Customer::validate($customerData)));
@@ -79,11 +80,13 @@ try {
     assert_test('Customer found by ID', $customer !== null);
 
     $customerData['customer_name'] = 'Phase 2 Updated Customer';
+    $customerData['contact_person'] = 'Daw Updated Contact';
     $customerData['phone'] = '09987654321';
     $customerData['remark'] = 'Updated remark';
     Customer::update($createdCustomerId, $customerData);
     $customer = Customer::find($createdCustomerId);
     assert_test('Customer updated', $customer && $customer['customer_name'] === 'Phase 2 Updated Customer');
+    assert_test('Customer contact person saved', $customer && $customer['contact_person'] === 'Daw Updated Contact');
     assert_test('Customer phone saved', $customer && $customer['phone'] === '09987654321');
     assert_test('Customer remark saved', $customer && $customer['remark'] === 'Updated remark');
 

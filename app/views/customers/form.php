@@ -22,6 +22,11 @@ page_header(
                    value="<?= e($customer['customer_name'] ?? '') ?>" required>
         </div>
         <div class="col-12 col-md-4">
+            <label class="form-label">Contact Person</label>
+            <input type="text" class="form-control" name="contact_person"
+                   value="<?= e($customer['contact_person'] ?? '') ?>" placeholder="e.g. U Aung" maxlength="100">
+        </div>
+        <div class="col-12 col-md-4">
             <label class="form-label">Phone</label>
             <input type="tel" class="form-control" name="phone"
                    value="<?= e($customer['phone'] ?? '') ?>" placeholder="e.g. 09xxxxxxxxx" maxlength="30">

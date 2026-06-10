@@ -10,7 +10,7 @@ define('APP_PATH', ROOT_PATH . '/app');
 require APP_PATH . '/config/database.php';
 require APP_PATH . '/helpers/Database.php';
 
-$expectedTables = ['users', 'items', 'customers', 'stock_in', 'stock_out'];
+$expectedTables = ['users', 'categories', 'items', 'customers', 'stock_in', 'stock_out'];
 
 echo "Stock Management — Database Test (Phase 0)\n";
 echo str_repeat('=', 44) . "\n\n";
@@ -45,6 +45,13 @@ try {
         echo "\n[WARN] Admin user not found — run database/seeds.sql\n";
         exit(1);
     }
+
+    $categoryCount = (int) $pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn();
+    if ($categoryCount < 1) {
+        echo "\n[WARN] No categories found — run database/seeds.sql\n";
+        exit(1);
+    }
+    echo "\n[OK] Categories seeded ({$categoryCount})\n";
 
     echo "\n" . str_repeat('=', 44) . "\n";
     echo "Phase 0 database check: PASSED\n";
