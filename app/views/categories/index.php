@@ -18,13 +18,7 @@ $resetUrl = base_url('pages/categories/index.php');
 require APP_PATH . '/views/partials/search-card.php';
 ?>
 
-<div class="card card-polished table-card">
-    <div class="card-header card-header-polished">
-        <span>Category List <span class="text-muted fw-normal">(<?= count($categories) ?>)</span></span>
-        <input type="text" class="form-control form-control-sm" id="tableSearch"
-               placeholder="Quick filter..." style="max-width:220px">
-    </div>
-    <div class="table-responsive">
+<?php list_panel_open('INVENTORY', 'Category List', count($categories)); ?>
         <table class="table data-table data-table-mobile data-table-searchable mb-0">
             <thead>
                 <tr>
@@ -69,7 +63,6 @@ require APP_PATH . '/views/partials/search-card.php';
                 <?php endif; ?>
             </tbody>
         </table>
-    </div>
-</div>
+<?php list_panel_table_close(); list_panel_close(); ?>
 
 <?php require APP_PATH . '/views/partials/delete-modal.php'; ?>

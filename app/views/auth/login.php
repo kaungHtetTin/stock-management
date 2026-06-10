@@ -21,7 +21,7 @@ require APP_PATH . '/views/layouts/header.php';
     </div>
 
     <div class="login-form-panel">
-        <div class="login-card">
+        <div class="login-card glass">
             <div class="login-mobile-brand">
                 <div class="login-brand-icon login-brand-icon--sm"><i class="bi bi-boxes"></i></div>
                 <div class="fw-bold"><?= e(APP_NAME) ?></div>

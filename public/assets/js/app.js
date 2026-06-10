@@ -14,6 +14,82 @@
         }
     });
 
+    /* Theme & brand persistence */
+    const root = document.documentElement;
+    const themeKey = 'app.theme';
+    const brandKey = 'app.brand';
+    const defaultBrand = '#087f74';
+
+    function applyTheme(theme) {
+        root.setAttribute('data-theme', theme);
+        localStorage.setItem(themeKey, theme);
+        $('.theme-segment-btn').removeClass('active');
+        $('.theme-segment-btn[data-theme-set="' + theme + '"]').addClass('active');
+    }
+
+    function applyBrand(color) {
+        root.style.setProperty('--color-primary', color);
+        localStorage.setItem(brandKey, color);
+        $('#brandColorInput').val(color);
+        $('.theme-swatch').removeClass('active');
+        $('.theme-swatch[data-brand="' + color + '"]').addClass('active');
+    }
+
+    const savedTheme = localStorage.getItem(themeKey) || 'light';
+    const savedBrand = localStorage.getItem(brandKey) || defaultBrand;
+    applyTheme(savedTheme);
+    applyBrand(savedBrand);
+
+    $('#themeToggleBtn').on('click', function (e) {
+        e.stopPropagation();
+        const $popover = $('#themePopover');
+        const open = !$popover.prop('hidden');
+        $popover.prop('hidden', open);
+        $(this).attr('aria-expanded', !open);
+    });
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#themeControl').length) {
+            $('#themePopover').prop('hidden', true);
+            $('#themeToggleBtn').attr('aria-expanded', 'false');
+        }
+    });
+
+    $(document).on('click', '[data-theme-set]', function () {
+        applyTheme($(this).data('theme-set'));
+    });
+
+    $(document).on('click', '.theme-swatch', function () {
+        applyBrand($(this).data('brand'));
+    });
+
+    $('#brandColorInput').on('input change', function () {
+        applyBrand(this.value);
+    });
+
+    /* Global nav search */
+    const navPages = [
+        { label: 'Dashboard', url: 'pages/dashboard.php' },
+        { label: 'Items', url: 'pages/items/index.php' },
+        { label: 'Categories', url: 'pages/categories/index.php' },
+        { label: 'Customers', url: 'pages/customers/index.php' },
+        { label: 'Balance', url: 'pages/balance/index.php' },
+        { label: 'Stock In', url: 'pages/stock-in/index.php' },
+        { label: 'Stock Out', url: 'pages/stock-out/index.php' },
+        { label: 'Reports', url: 'pages/reports/index.php' },
+        { label: 'Users', url: 'pages/users/index.php' }
+    ];
+
+    $('#globalSearch').on('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        const q = $(this).val().toLowerCase().trim();
+        if (!q) return;
+        const match = navPages.find(function (p) { return p.label.toLowerCase().indexOf(q) > -1; });
+        if (match) {
+            window.location.href = (window.APP_BASE || '') + match.url;
+        }
+    });
+
     /* Sidebar toggle (mobile) */
     const $sidebar = $('#appSidebar');
     const $backdrop = $('#sidebarBackdrop');
@@ -213,12 +289,12 @@
     /* Chart defaults */
     window.AppCharts = {
         colors: {
-            primary: '#4f46e5',
+            primary: '#087f74',
             fruits: '#ea580c',
             gelato: '#db2777',
             icecream: '#2563eb',
-            grid: '#e2e8f0',
-            text: '#64748b'
+            grid: 'rgb(15 23 42 / 8%)',
+            text: '#69768a'
         },
 
         bar: function (canvasId, labels, values) {

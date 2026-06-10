@@ -1,5 +1,5 @@
-<div class="card card-filter mb-4">
-    <div class="card-body">
+<div class="card card-filter filter-toolbar glass mb-4">
+    <div class="card-body p-0">
         <form class="row g-3 align-items-end" method="get" action="">
             <?= $searchFields ?? '' ?>
             <div class="col-12 col-sm-auto">

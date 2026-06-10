@@ -37,7 +37,7 @@ if (is_admin()) {
     ];
 }
 ?>
-<aside class="app-sidebar" id="appSidebar">
+<aside class="app-sidebar admin-sidebar glass" id="appSidebar">
     <div class="sidebar-brand">
         <div class="brand-icon"><i class="bi bi-boxes"></i></div>
         <div class="brand-text">
@@ -49,15 +49,15 @@ if (is_admin()) {
     <nav class="sidebar-nav">
         <?php foreach ($navSections as $section): ?>
         <div class="sidebar-section">
-            <span class="sidebar-section-label"><?= e($section['label']) ?></span>
+            <span class="sidebar-section-label eyebrow"><?= e($section['label']) ?></span>
             <?php foreach ($section['items'] as $item): ?>
             <?php if (!empty($item['admin']) && !is_admin()) continue; ?>
             <a href="<?= base_url($item['url']) ?>"
                class="sidebar-link<?= active_nav($item['key'], $currentNav) ?>">
                 <span class="sidebar-link-icon"><i class="bi bi-<?= e($item['icon']) ?>"></i></span>
                 <span class="sidebar-link-text"><?= e($item['label']) ?></span>
-                <?php if ($item['key'] === $currentNav): ?>
-                <span class="sidebar-link-indicator"></span>
+                <?php if ($item['key'] === 'stock-in' && is_admin() && ($pendingBadge ?? 0) > 0): ?>
+                <small class="sidebar-badge"><?= (int) $pendingBadge ?></small>
                 <?php endif; ?>
             </a>
             <?php endforeach; ?>
@@ -65,15 +65,15 @@ if (is_admin()) {
         <?php endforeach; ?>
     </nav>
 
-    <div class="sidebar-footer">
+    <div class="sidebar-footer admin-profile">
         <div class="sidebar-user">
-            <div class="user-avatar"><?= strtoupper(substr($user['display_name'] ?? 'U', 0, 1)) ?></div>
+            <div class="user-avatar"><?= strtoupper(substr($user['display_name'] ?? 'U', 0, 2)) ?></div>
             <div class="user-info">
                 <span class="user-name"><?= e($user['display_name'] ?? 'User') ?></span>
                 <span class="user-role"><?= e(ucfirst($user['role'] ?? 'staff')) ?></span>
             </div>
         </div>
-        <a href="<?= base_url('logout.php') ?>" class="sidebar-logout" title="Logout">
+        <a href="<?= base_url('logout.php') ?>" class="sidebar-logout icon-btn small" title="Logout">
             <i class="bi bi-box-arrow-right"></i>
         </a>
     </div>

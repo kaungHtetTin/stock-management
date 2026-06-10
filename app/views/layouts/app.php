@@ -6,11 +6,11 @@
 $pendingBadge = $pendingBadge ?? 0;
 require APP_PATH . '/views/layouts/header.php';
 ?>
-<div class="app-wrapper">
+<div class="app-root admin-app app-wrapper">
     <?php require APP_PATH . '/views/layouts/sidebar.php'; ?>
     <div class="app-main">
         <?php require APP_PATH . '/views/layouts/topbar.php'; ?>
-        <div class="app-content">
+        <div class="app-content admin-content">
             <?php require APP_PATH . '/views/partials/flash.php'; ?>
             <?= $content ?? '' ?>
         </div>

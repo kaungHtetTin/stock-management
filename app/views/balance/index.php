@@ -27,15 +27,7 @@ $resetUrl = base_url('pages/balance/index.php');
 require APP_PATH . '/views/partials/search-card.php';
 ?>
 
-<div class="row g-3 g-md-4 mb-3 mb-md-4">
-    <div class="col-12">
-        <div class="card card-polished table-card">
-            <div class="card-header card-header-polished flex-wrap gap-2">
-                <span>Current Stock <span class="text-muted fw-normal">(<?= count($balances) ?> items)</span></span>
-                <input type="text" class="form-control form-control-sm ms-lg-auto" id="tableSearch"
-                       placeholder="Quick filter..." style="max-width:220px">
-            </div>
-            <div class="table-responsive">
+<?php list_panel_open('INVENTORY', 'Current Stock', count($balances)); ?>
                 <table class="table data-table data-table-mobile data-table-searchable mb-0">
                     <thead>
                         <tr>
@@ -79,18 +71,14 @@ require APP_PATH . '/views/partials/search-card.php';
                         <?php endif; ?>
                     </tbody>
                 </table>
-            </div>
-        </div>
-    </div>
-</div>
+<?php list_panel_table_close(); list_panel_close(); ?>
 
-<div class="row g-3 g-md-4 mb-4">
-    <div class="col-12 col-lg-6">
-        <div class="card card-polished h-100">
-            <div class="card-header card-header-polished">
+<div class="admin-grid">
+    <section class="card card-polished panel glass h-100">
+            <div class="card-header card-header-polished panel-heading">
                 <div class="card-header-title">
                     <span class="card-header-icon"><i class="bi bi-bar-chart-fill"></i></span>
-                    <span>Balance by Category</span>
+                    <div><p class="eyebrow mb-1">ANALYTICS</p><span>Balance by Category</span></div>
                 </div>
             </div>
             <div class="card-body">
@@ -98,15 +86,13 @@ require APP_PATH . '/views/partials/search-card.php';
                     <canvas id="balanceBarChart"></canvas>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div class="col-12 col-lg-6">
-        <div class="card card-polished h-100">
-            <div class="card-header card-header-polished">
+    <section class="card card-polished panel glass h-100">
+            <div class="card-header card-header-polished panel-heading">
                 <div class="card-header-title">
                     <span class="card-header-icon"><i class="bi bi-pie-chart"></i></span>
-                    <span>Category Share</span>
+                    <div><p class="eyebrow mb-1">ANALYTICS</p><span>Category Share</span></div>
                 </div>
             </div>
             <div class="card-body">
@@ -114,8 +100,7 @@ require APP_PATH . '/views/partials/search-card.php';
                     <canvas id="balanceDoughnutChart"></canvas>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 </div>
 
 <?php

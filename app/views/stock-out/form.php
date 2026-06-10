@@ -36,7 +36,7 @@ if ($isEdit && ($record['status'] ?? '') === 'rejected'):
 </div>
 <?php endif; ?>
 
-<form class="form-card" method="post" action="" id="stockOutForm">
+<form class="form-card glass" method="post" action="" id="stockOutForm">
     <?= csrf_field() ?>
 
     <div class="form-section-title">Customer & Reason</div>

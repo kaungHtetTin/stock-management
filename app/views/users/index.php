@@ -8,47 +8,40 @@ page_header('Users', 'Manage admin and staff accounts', [
 ]);
 ?>
 
-<div class="card card-filter mb-4">
-    <div class="card-body">
-        <form class="row g-3 align-items-end" method="get">
-            <div class="col-12 col-md-4">
-                <label class="form-label">Search</label>
-                <input type="text" class="form-control" name="q" placeholder="Username or name"
-                       value="<?= e($filters['q']) ?>">
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label">Role</label>
-                <select class="form-select" name="role">
-                    <option value="">All Roles</option>
-                    <?php foreach (User::ROLES as $role): ?>
-                    <option value="<?= e($role) ?>" <?= $filters['role'] === $role ? 'selected' : '' ?>><?= ucfirst(e($role)) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label">Status</label>
-                <select class="form-select" name="status">
-                    <option value="">All</option>
-                    <?php foreach (User::STATUSES as $status): ?>
-                    <option value="<?= e($status) ?>" <?= $filters['status'] === $status ? 'selected' : '' ?>><?= ucfirst(e($status)) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-12 col-sm-auto d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Search</button>
-                <?php if ($filters['q'] !== '' || $filters['role'] !== '' || $filters['status'] !== ''): ?>
-                <a href="<?= base_url('pages/users/index.php') ?>" class="btn btn-light">Reset</a>
-                <?php endif; ?>
-            </div>
-        </form>
-    </div>
+<?php
+ob_start();
+?>
+<div class="col-12 col-md-4">
+    <label class="form-label">Search</label>
+    <input type="text" class="form-control" name="q" placeholder="Username or name"
+           value="<?= e($filters['q']) ?>">
 </div>
+<div class="col-12 col-md-3">
+    <label class="form-label">Role</label>
+    <select class="form-select" name="role">
+        <option value="">All Roles</option>
+        <?php foreach (User::ROLES as $role): ?>
+        <option value="<?= e($role) ?>" <?= $filters['role'] === $role ? 'selected' : '' ?>><?= ucfirst(e($role)) ?></option>
+        <?php endforeach; ?>
+    </select>
+</div>
+<div class="col-12 col-md-3">
+    <label class="form-label">Status</label>
+    <select class="form-select" name="status">
+        <option value="">All</option>
+        <?php foreach (User::STATUSES as $status): ?>
+        <option value="<?= e($status) ?>" <?= $filters['status'] === $status ? 'selected' : '' ?>><?= ucfirst(e($status)) ?></option>
+        <?php endforeach; ?>
+    </select>
+</div>
+<?php
+$searchFields = ob_get_clean();
+$showReset = $filters['q'] !== '' || $filters['role'] !== '' || $filters['status'] !== '';
+$resetUrl = base_url('pages/users/index.php');
+require APP_PATH . '/views/partials/search-card.php';
+?>
 
-<div class="card card-polished table-card">
-    <div class="card-header card-header-polished">
-        User List <span class="text-muted fw-normal">(<?= count($users) ?>)</span>
-    </div>
-    <div class="table-responsive">
+<?php list_panel_open('SYSTEM', 'User List', count($users), false); ?>
         <table class="table data-table data-table-mobile mb-0">
             <thead>
                 <tr>
@@ -82,8 +75,8 @@ page_header('Users', 'Manage admin and staff accounts', [
                     </td>
                     <td data-label="Username"><span class="text-code"><?= e($row['username']) ?></span></td>
                     <td data-label="Role">
-                        <span class="badge <?= $row['role'] === 'admin' ? 'bg-primary' : 'bg-secondary' ?>">
-                            <?= e(ucfirst($row['role'])) ?>
+                        <span class="status <?= $row['role'] === 'admin' ? 'status-info' : 'status-neutral' ?>">
+                            <span class="status-dot"></span><?= e(ucfirst($row['role'])) ?>
                         </span>
                     </td>
                     <td data-label="Status"><?= status_badge($row['status']) ?></td>
@@ -108,7 +101,6 @@ page_header('Users', 'Manage admin and staff accounts', [
                 <?php endif; ?>
             </tbody>
         </table>
-    </div>
-</div>
+<?php list_panel_table_close(); list_panel_close(); ?>
 
 <?php require APP_PATH . '/views/partials/delete-modal.php'; ?>

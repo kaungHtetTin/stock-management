@@ -13,8 +13,8 @@ $paginationBase = base_url('pages/reports/index.php') . report_query_string($fil
 ?>
 <?php page_header('Reports', 'Filter and view stock reports'); ?>
 
-<div class="card card-filter mb-4 no-print">
-    <div class="card-body">
+<div class="card card-filter filter-toolbar glass mb-4 no-print">
+    <div class="card-body p-0">
         <form method="get" action="">
             <input type="hidden" name="generate" value="1">
             <div class="row g-3">
@@ -113,14 +113,14 @@ $paginationBase = base_url('pages/reports/index.php') . report_query_string($fil
 </div>
 
 <?php if (!$generated): ?>
-<div class="card card-polished">
+<section class="card card-polished panel glass">
     <div class="empty-state py-5">
         <i class="bi bi-file-earmark-bar-graph d-block"></i>
         <p class="mb-0">Select a report type and filters, then click <strong>Generate</strong>.</p>
     </div>
-</div>
+</section>
 <?php else: ?>
-<div class="report-preview" id="reportOutput">
+<section class="report-preview panel glass" id="reportOutput">
     <div class="report-company-header">
         <h3><?= e(APP_COMPANY) ?></h3>
         <p>Company ID: <?= e(APP_COMPANY_ID) ?></p>
@@ -144,35 +144,27 @@ $paginationBase = base_url('pages/reports/index.php') . report_query_string($fil
     <?php endif; ?>
 
     <?php if ($reportType === 'activity' && !empty($report['summary'])): ?>
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="summary-row">
-                <span class="summary-label">Stock In records</span>
-                <span class="summary-value text-success"><?= format_number($report['summary']['in_count']) ?></span>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="summary-row">
-                <span class="summary-label">Stock In qty</span>
-                <span class="summary-value text-success"><?= format_number($report['summary']['in_qty'], 2) ?></span>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="summary-row">
-                <span class="summary-label">Stock Out records</span>
-                <span class="summary-value text-danger"><?= format_number($report['summary']['out_count']) ?></span>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="summary-row">
-                <span class="summary-label">Stock Out qty</span>
-                <span class="summary-value text-danger"><?= format_number($report['summary']['out_qty'], 2) ?></span>
-            </div>
-        </div>
+    <div class="metrics-grid mb-3">
+        <article class="metric-card glass">
+            <small>Stock In records</small>
+            <strong class="stat-card-value text-success"><?= format_number($report['summary']['in_count']) ?></strong>
+        </article>
+        <article class="metric-card glass">
+            <small>Stock In qty</small>
+            <strong class="stat-card-value text-success"><?= format_number($report['summary']['in_qty'], 2) ?></strong>
+        </article>
+        <article class="metric-card glass">
+            <small>Stock Out records</small>
+            <strong class="stat-card-value text-danger"><?= format_number($report['summary']['out_count']) ?></strong>
+        </article>
+        <article class="metric-card glass">
+            <small>Stock Out qty</small>
+            <strong class="stat-card-value text-danger"><?= format_number($report['summary']['out_qty'], 2) ?></strong>
+        </article>
     </div>
     <?php endif; ?>
 
-    <div class="table-responsive">
+    <div class="table-wrap table-responsive">
         <?php if (empty($report['rows'])): ?>
         <div class="empty-state py-5">
             <i class="bi bi-inbox d-block"></i>
@@ -305,8 +297,8 @@ $paginationBase = base_url('pages/reports/index.php') . report_query_string($fil
                 <?php foreach ($report['rows'] as $row): ?>
                 <tr>
                     <td data-label="Type">
-                        <span class="badge <?= $row['activity_type'] === 'in' ? 'bg-success' : 'bg-danger' ?>">
-                            <?= $row['activity_type'] === 'in' ? 'In' : 'Out' ?>
+                        <span class="status <?= $row['activity_type'] === 'in' ? 'status-success' : 'status-danger' ?>">
+                            <span class="status-dot"></span><?= $row['activity_type'] === 'in' ? 'In' : 'Out' ?>
                         </span>
                     </td>
                     <td data-label="Item">
@@ -338,7 +330,7 @@ $paginationBase = base_url('pages/reports/index.php') . report_query_string($fil
     $ariaLabel = 'Report pagination';
     require APP_PATH . '/views/partials/pagination.php';
     ?>
-</div>
+</section>
 <?php endif; ?>
 
 <?php

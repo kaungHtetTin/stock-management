@@ -5,7 +5,7 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
 page_header('Dashboard', 'Overview of stock operations and pending approvals');
 ?>
 
-<div class="welcome-banner animate-in animate-in-delay-1">
+<div class="welcome-banner glass animate-in animate-in-delay-1">
     <div class="welcome-banner-content">
         <span class="welcome-banner-greeting"><?= e($greeting) ?>, <?= e($user['display_name'] ?? 'User') ?></span>
         <h2 class="welcome-banner-title">Stock operations at a glance</h2>
@@ -13,82 +13,65 @@ page_header('Dashboard', 'Overview of stock operations and pending approvals');
     </div>
     <div class="welcome-banner-meta">
         <div class="welcome-stat-pill">
-            <i class="bi bi-box-arrow-in-down text-success"></i>
+            <i class="bi bi-box-arrow-in-down"></i>
             <span><?= format_number($stats['stock_in_today']) ?> in today</span>
         </div>
         <div class="welcome-stat-pill">
-            <i class="bi bi-box-arrow-up-right text-danger"></i>
+            <i class="bi bi-box-arrow-up-right"></i>
             <span><?= format_number($stats['stock_out_today']) ?> out today</span>
         </div>
     </div>
 </div>
 
-<div class="row g-3 g-md-4 mb-4">
-    <div class="col-6 col-lg-3">
-        <div class="stat-card stat-card--primary animate-in animate-in-delay-2">
-            <div class="stat-card-top">
-                <div class="stat-card-icon primary"><i class="bi bi-box-seam"></i></div>
-                <span class="stat-card-trend stat-card-trend--neutral">Active</span>
-            </div>
-            <div class="stat-card-value"><?= format_number($stats['total_items']) ?></div>
-            <div class="stat-card-label">Total Items</div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="stat-card stat-card--success animate-in animate-in-delay-3">
-            <div class="stat-card-top">
-                <div class="stat-card-icon success"><i class="bi bi-stack"></i></div>
-                <span class="stat-card-trend stat-card-trend--up"><i class="bi bi-arrow-up-short"></i> Stock</span>
-            </div>
-            <div class="stat-card-value"><?= format_number($stats['total_stock']) ?></div>
-            <div class="stat-card-label">Total Stock Units</div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="stat-card stat-card--warning animate-in animate-in-delay-4">
-            <div class="stat-card-top">
-                <div class="stat-card-icon warning"><i class="bi bi-clock-history"></i></div>
-                <?php if ($stats['pending_count'] > 0): ?>
-                <span class="stat-card-trend stat-card-trend--warn">Action needed</span>
-                <?php endif; ?>
-            </div>
-            <div class="stat-card-value"><?= format_number($stats['pending_count']) ?></div>
-            <div class="stat-card-label">Pending Approvals</div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="stat-card stat-card--info animate-in animate-in-delay-5">
-            <div class="stat-card-top">
-                <div class="stat-card-icon info"><i class="bi bi-people"></i></div>
-            </div>
-            <div class="stat-card-value"><?= format_number($stats['customers']) ?></div>
-            <div class="stat-card-label">Customers</div>
-        </div>
-    </div>
+<div class="metrics-grid">
+    <article class="stat-card metric-card glass animate-in animate-in-delay-2">
+        <span class="stat-card-icon primary"><i class="bi bi-box-seam"></i></span>
+        <small class="stat-card-label">Total Items</small>
+        <strong class="stat-card-value"><?= format_number($stats['total_items']) ?></strong>
+        <p class="mb-0">Active catalog</p>
+    </article>
+    <article class="stat-card metric-card glass animate-in animate-in-delay-3">
+        <span class="stat-card-icon success"><i class="bi bi-stack"></i></span>
+        <small class="stat-card-label">Total Stock Units</small>
+        <strong class="stat-card-value"><?= format_number($stats['total_stock']) ?></strong>
+        <p class="mb-0">On hand balance</p>
+    </article>
+    <article class="stat-card metric-card glass animate-in animate-in-delay-4">
+        <span class="stat-card-icon warning"><i class="bi bi-clock-history"></i></span>
+        <small class="stat-card-label">Pending Approvals</small>
+        <strong class="stat-card-value"><?= format_number($stats['pending_count']) ?></strong>
+        <p class="mb-0"><?= $stats['pending_count'] > 0 ? 'Action needed' : 'All clear' ?></p>
+    </article>
+    <article class="stat-card metric-card glass animate-in animate-in-delay-5">
+        <span class="stat-card-icon info"><i class="bi bi-people"></i></span>
+        <small class="stat-card-label">Customers</small>
+        <strong class="stat-card-value"><?= format_number($stats['customers']) ?></strong>
+        <p class="mb-0">Registered accounts</p>
+    </article>
 </div>
 
-<div class="row g-3 g-md-4">
-    <div class="col-lg-8">
-        <div class="card card-polished mb-4 animate-in">
-            <div class="card-header card-header-polished">
+<div class="admin-grid">
+    <div>
+        <section class="card card-polished panel glass mb-3 animate-in">
+            <div class="card-header card-header-polished panel-heading">
                 <div class="card-header-title">
                     <span class="card-header-icon"><i class="bi bi-bar-chart-fill"></i></span>
-                    <span>Stock by Category</span>
+                    <div><p class="eyebrow mb-1">INVENTORY</p><span>Stock by Category</span></div>
                 </div>
-                <a href="<?= base_url('pages/balance/index.php') ?>" class="btn btn-sm btn-soft-primary">View Balance</a>
+                <a href="<?= base_url('pages/balance/index.php') ?>" class="text-btn">View balance</a>
             </div>
             <div class="card-body">
                 <div class="chart-container">
                     <canvas id="dashboardCategoryChart"></canvas>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="card card-polished animate-in">
-            <div class="card-header card-header-polished">
+        <section class="card card-polished panel glass animate-in">
+            <div class="card-header card-header-polished panel-heading">
                 <div class="card-header-title">
                     <span class="card-header-icon"><i class="bi bi-activity"></i></span>
-                    <span>Recent Activity</span>
+                    <div><p class="eyebrow mb-1">OPERATIONS</p><span>Recent Activity</span></div>
                 </div>
             </div>
             <div class="card-body p-0 px-3">
@@ -118,15 +101,15 @@ page_header('Dashboard', 'Overview of stock operations and pending approvals');
                 <?php endforeach; ?>
                 <?php endif; ?>
             </div>
-        </div>
+        </section>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card card-polished mb-4 animate-in">
-            <div class="card-header card-header-polished">
+    <div>
+        <section class="card card-polished panel glass mb-3 animate-in">
+            <div class="card-header card-header-polished panel-heading">
                 <div class="card-header-title">
-                    <span class="card-header-icon card-header-icon--warning"><i class="bi bi-bell"></i></span>
-                    <span><?= is_admin() ? 'Pending Approvals' : 'My Pending Requests' ?></span>
+                    <span class="card-header-icon"><i class="bi bi-bell"></i></span>
+                    <div><p class="eyebrow mb-1">QUEUE</p><span><?= is_admin() ? 'Pending Approvals' : 'My Pending Requests' ?></span></div>
                 </div>
                 <span class="badge badge-pill-count"><?= count($pending) ?></span>
             </div>
@@ -164,13 +147,13 @@ page_header('Dashboard', 'Overview of stock operations and pending approvals');
                 <?php endforeach; ?>
                 <?php endif; ?>
             </div>
-        </div>
+        </section>
 
-        <div class="card card-polished animate-in">
-            <div class="card-header card-header-polished">
+        <section class="card card-polished panel glass animate-in">
+            <div class="card-header card-header-polished panel-heading">
                 <div class="card-header-title">
                     <span class="card-header-icon"><i class="bi bi-calendar-day"></i></span>
-                    <span>Today's Summary</span>
+                    <div><p class="eyebrow mb-1">TODAY</p><span>Today's Summary</span></div>
                 </div>
             </div>
             <div class="card-body">
@@ -200,7 +183,7 @@ page_header('Dashboard', 'Overview of stock operations and pending approvals');
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 

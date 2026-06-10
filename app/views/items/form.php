@@ -7,7 +7,7 @@ page_header(
 );
 ?>
 
-<form class="form-card" method="post" action="">
+<form class="form-card glass" method="post" action="">
     <?= csrf_field() ?>
     <div class="form-section-title">Product Information</div>
     <div class="row g-3">

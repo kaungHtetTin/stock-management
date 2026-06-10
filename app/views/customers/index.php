@@ -28,13 +28,7 @@ $resetUrl = base_url('pages/customers/index.php');
 require APP_PATH . '/views/partials/search-card.php';
 ?>
 
-<div class="card card-polished table-card">
-    <div class="card-header card-header-polished">
-        <span>Customer List <span class="text-muted fw-normal">(<?= format_number($listTotal) ?>)</span></span>
-        <input type="text" class="form-control form-control-sm" id="tableSearch"
-               placeholder="Quick filter..." style="max-width:220px">
-    </div>
-    <div class="table-responsive">
+<?php list_panel_open('MASTER DATA', 'Customer List', $listTotal); ?>
         <table class="table data-table data-table-mobile data-table-searchable mb-0">
             <thead>
                 <tr>
@@ -87,7 +81,7 @@ require APP_PATH . '/views/partials/search-card.php';
                 <?php endif; ?>
             </tbody>
         </table>
-    </div>
+<?php list_panel_table_close(); ?>
     <?php
     $page = $pagination['page'];
     $totalPages = $pagination['total_pages'];
@@ -97,6 +91,6 @@ require APP_PATH . '/views/partials/search-card.php';
     $ariaLabel = 'Customers pagination';
     require APP_PATH . '/views/partials/pagination.php';
     ?>
-</div>
+<?php list_panel_close(); ?>
 
 <?php if (is_admin()) require APP_PATH . '/views/partials/delete-modal.php'; ?>

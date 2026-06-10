@@ -1,8 +1,13 @@
 <?php $user = current_user(); ?>
-<header class="app-topbar">
-    <button type="button" class="btn btn-icon sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+<header class="app-topbar admin-topbar glass">
+    <button type="button" class="icon-btn sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
         <i class="bi bi-list"></i>
     </button>
+
+    <div class="search-box global-search d-none d-md-flex">
+        <i class="bi bi-search"></i>
+        <input type="search" id="globalSearch" placeholder="Search pages..." autocomplete="off" aria-label="Search">
+    </div>
 
     <div class="topbar-breadcrumb d-none d-sm-block">
         <?php if (!empty($breadcrumbs)): ?>
@@ -19,11 +24,34 @@
 
     <div class="topbar-actions ms-auto">
         <?php if (is_admin() && ($pendingBadge ?? 0) > 0): ?>
-        <a href="<?= base_url('pages/stock-in/index.php?status=pending') ?>" class="topbar-notify" title="Pending approvals">
+        <a href="<?= base_url('pages/stock-in/index.php?status=pending') ?>" class="icon-btn topbar-notify" title="Pending approvals">
             <i class="bi bi-bell"></i>
             <span class="topbar-notify-count"><?= (int) $pendingBadge ?></span>
         </a>
         <?php endif; ?>
+
+        <div class="theme-control" id="themeControl">
+            <button type="button" class="icon-btn" id="themeToggleBtn" aria-label="Theme settings" aria-expanded="false">
+                <i class="bi bi-palette"></i>
+            </button>
+            <div class="theme-popover glass" id="themePopover" hidden>
+                <p class="eyebrow">Appearance</p>
+                <div class="theme-segment" role="group" aria-label="Theme mode">
+                    <button type="button" class="theme-segment-btn" data-theme-set="light"><i class="bi bi-sun"></i> Light</button>
+                    <button type="button" class="theme-segment-btn" data-theme-set="dark"><i class="bi bi-moon"></i> Dark</button>
+                </div>
+                <p class="eyebrow mt-3">Brand color</p>
+                <div class="theme-swatches">
+                    <button type="button" class="theme-swatch" data-brand="#087f74" style="--swatch:#087f74" title="Teal"></button>
+                    <button type="button" class="theme-swatch" data-brand="#4f46e5" style="--swatch:#4f46e5" title="Indigo"></button>
+                    <button type="button" class="theme-swatch" data-brand="#2563eb" style="--swatch:#2563eb" title="Blue"></button>
+                    <button type="button" class="theme-swatch" data-brand="#059669" style="--swatch:#059669" title="Green"></button>
+                    <label class="theme-color-input" title="Custom color">
+                        <input type="color" id="brandColorInput" value="#087f74">
+                    </label>
+                </div>
+            </div>
+        </div>
 
         <span class="topbar-date d-none d-xl-flex">
             <i class="bi bi-calendar3"></i>

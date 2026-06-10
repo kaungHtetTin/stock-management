@@ -1,3 +1,4 @@
+    <script>window.APP_BASE = <?= json_encode(rtrim(base_url(), '/') . '/') ?>;</script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= asset_url('js/app.js') ?>?v=<?= filemtime(PUBLIC_PATH . '/assets/js/app.js') ?>"></script>

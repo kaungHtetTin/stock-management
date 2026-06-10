@@ -61,10 +61,16 @@ function status_badge(string $status): string
         'inactive' => ['class' => 'badge-status-rejected', 'label' => 'Inactive', 'icon' => 'person-x'],
     ];
     $item = $map[$status] ?? ['class' => 'bg-secondary', 'label' => ucfirst($status), 'icon' => 'circle'];
+    $statusClass = match ($status) {
+        'pending'  => 'status-warning',
+        'approved', 'active' => 'status-success',
+        'rejected', 'inactive' => 'status-danger',
+        default => 'status-neutral',
+    };
     return sprintf(
-        '<span class="badge badge-status %s"><i class="bi bi-%s me-1"></i>%s</span>',
+        '<span class="status badge-status %s %s"><span class="status-dot"></span>%s</span>',
+        e($statusClass),
         e($item['class']),
-        e($item['icon']),
         e($item['label'])
     );
 }
@@ -96,6 +102,26 @@ function reason_badge(string $reason): string
     ];
     $class = $map[$reason] ?? 'bg-secondary';
     return sprintf('<span class="badge badge-reason %s">%s</span>', e($class), e($reason));
+}
+
+function list_panel_open(string $eyebrow, string $title, ?int $count = null, bool $search = true, string $searchPlaceholder = 'Quick filter...'): void
+{
+    $panelEyebrow = $eyebrow;
+    $panelTitle = $title;
+    $panelCount = $count;
+    $panelSearch = $search;
+    $panelSearchPlaceholder = $searchPlaceholder;
+    include APP_PATH . '/views/partials/list-panel-open.php';
+}
+
+function list_panel_table_close(): void
+{
+    include APP_PATH . '/views/partials/list-panel-table-close.php';
+}
+
+function list_panel_close(): void
+{
+    include APP_PATH . '/views/partials/list-panel-close.php';
 }
 
 function page_header(string $title, string $subtitle = '', array $actions = []): void
