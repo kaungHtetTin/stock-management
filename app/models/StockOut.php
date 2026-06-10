@@ -10,6 +10,7 @@ require_once APP_PATH . '/models/Customer.php';
 class StockOut
 {
     public const STATUSES = ['pending', 'approved', 'rejected'];
+    public const EDITABLE_STATUSES = ['pending', 'approved', 'rejected'];
     public const REASONS = ['Sales', 'Sample', 'Sale & Marketing', 'Other'];
 
     public static function all(array $filters = []): array
@@ -128,29 +129,139 @@ class StockOut
         return ['batch_ref' => $batchRef, 'ids' => $ids];
     }
 
-    public static function update(int $id, array $data): bool
+    public static function findBatchRecords(int $id): array
     {
+        $record = self::find($id);
+        if (!$record) {
+            return [];
+        }
+
+        if (empty($record['batch_ref'])) {
+            return [$record];
+        }
+
         $db = Database::connect();
         $stmt = $db->prepare(
-            'UPDATE stock_out SET
-                item_id = :item_id,
-                customer_id = :customer_id,
-                mfd_date = :mfd_date,
-                qty = :qty,
-                unit = :unit,
-                reason = :reason,
-                remark = :remark
-             WHERE id = :id AND status = \'pending\''
+            'SELECT so.*, i.item_no, i.item_name, c.customer_name, c.id AS customer_id,
+                    u.display_name AS created_by_name
+             FROM stock_out so
+             INNER JOIN items i ON i.id = so.item_id
+             INNER JOIN customers c ON c.id = so.customer_id
+             INNER JOIN users u ON u.id = so.created_by
+             WHERE so.batch_ref = :batch_ref
+             ORDER BY so.id ASC'
         );
+        $stmt->execute(['batch_ref' => $record['batch_ref']]);
 
-        return $stmt->execute(array_merge($data, ['id' => $id]));
+        return array_map([self::class, 'formatRow'], $stmt->fetchAll());
+    }
+
+    public static function findForEdit(int $id): ?array
+    {
+        $batch = self::findBatchRecords($id);
+        if (empty($batch) || !self::canModify($batch[0])) {
+            return null;
+        }
+
+        $first = $batch[0];
+        $lines = [];
+        foreach ($batch as $row) {
+            $lines[] = array_merge(self::normalizeLine($row), ['id' => (int) $row['id']]);
+        }
+
+        return [
+            'anchor_id'   => $id,
+            'id'          => $id,
+            'batch_ref'   => $first['batch_ref'] ?? null,
+            'is_batch'    => count($batch) > 1,
+            'status'      => $first['status'],
+            'customer_id' => (int) $first['customer_id'],
+            'reason'      => $first['reason'],
+            'remark'      => $first['remark'],
+            'lines'       => $lines,
+        ];
+    }
+
+    public static function updateSubmission(int $anchorId, array $input): bool
+    {
+        $batch = self::findBatchRecords($anchorId);
+        if (empty($batch) || !self::canModify($batch[0])) {
+            return false;
+        }
+
+        $errors = self::validateEditSubmission($anchorId, $input);
+        if ($errors) {
+            throw new InvalidArgumentException(implode(' ', $errors));
+        }
+
+        $header = [
+            'customer_id' => (int) ($input['customer_id'] ?? 0),
+            'reason'      => $input['reason'] ?? '',
+            'remark'      => trim($input['remark'] ?? '') ?: null,
+        ];
+        $lines = self::parseLines($input);
+        $byId = [];
+        foreach ($batch as $row) {
+            $byId[(int) $row['id']] = $row;
+        }
+
+        $db = Database::connect();
+        $db->beginTransaction();
+
+        try {
+            foreach ($lines as $line) {
+                $lineId = (int) ($line['id'] ?? 0);
+                $existing = $byId[$lineId] ?? null;
+                if (!$existing) {
+                    throw new RuntimeException('Invalid batch line reference.');
+                }
+
+                $data = array_merge(self::normalizeLine($line), $header);
+                $statusPatch = self::statusPatchAfterEdit($existing['status']);
+                if (!self::updateRecord($lineId, $data, $statusPatch)) {
+                    throw new RuntimeException('Unable to update stock out record.');
+                }
+            }
+
+            $db->commit();
+            return true;
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    public static function update(int $id, array $data): bool
+    {
+        $record = self::find($id);
+        if (!$record) {
+            return false;
+        }
+
+        $statusPatch = self::statusPatchAfterEdit($record['status']);
+        return self::updateRecord($id, $data, $statusPatch);
+    }
+
+    public static function deleteBatch(int $anchorId): int
+    {
+        $batch = self::findBatchRecords($anchorId);
+        if (empty($batch) || !self::canModify($batch[0])) {
+            return 0;
+        }
+
+        $ids = array_map(static fn ($row) => (int) $row['id'], $batch);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        $db = Database::connect();
+        $stmt = $db->prepare("DELETE FROM stock_out WHERE id IN ({$placeholders})");
+        $stmt->execute($ids);
+
+        return $stmt->rowCount();
     }
 
     public static function delete(int $id): bool
     {
-        $db = Database::connect();
-        $stmt = $db->prepare('DELETE FROM stock_out WHERE id = :id AND status = \'pending\'');
-        return $stmt->execute(['id' => $id]);
+        return self::deleteBatch($id) > 0;
     }
 
     public static function countPending(): int
@@ -299,13 +410,135 @@ class StockOut
 
     public static function canModify(array $record): bool
     {
-        if (($record['status'] ?? '') !== 'pending') {
+        if (!in_array($record['status'] ?? '', self::EDITABLE_STATUSES, true)) {
             return false;
         }
         if (is_admin()) {
             return true;
         }
+
         return (int) ($record['raw_created_by'] ?? 0) === (int) (current_user()['id'] ?? 0);
+    }
+
+    public static function validateEditSubmission(int $anchorId, array $input): array
+    {
+        $errors = self::validateSubmission($input);
+        $batch = self::findBatchRecords($anchorId);
+
+        if (empty($batch)) {
+            $errors[] = 'Record not found.';
+            return $errors;
+        }
+
+        $lines = self::parseLines($input);
+        if (count($lines) !== count($batch)) {
+            $errors[] = 'Edit the full batch together — line count cannot change.';
+        }
+
+        $batchIds = array_map(static fn ($row) => (int) $row['id'], $batch);
+        sort($batchIds);
+        $submittedIds = array_values(array_filter(array_map(
+            static fn ($line) => (int) ($line['id'] ?? 0),
+            $lines
+        )));
+        sort($submittedIds);
+
+        if ($submittedIds !== $batchIds) {
+            $errors[] = 'Invalid batch line references.';
+        }
+
+        $errors = array_merge($errors, self::validateApprovedBalanceDelta($batch, $lines));
+
+        return $errors;
+    }
+
+    public static function validateApprovedBalanceDelta(array $batch, array $lines): array
+    {
+        require_once APP_PATH . '/services/BalanceService.php';
+
+        $errors = [];
+        $byId = [];
+        foreach ($batch as $row) {
+            $byId[(int) $row['id']] = $row;
+        }
+
+        $deltaByItem = [];
+        foreach ($lines as $line) {
+            $lineId = (int) ($line['id'] ?? 0);
+            $existing = $byId[$lineId] ?? null;
+            if (!$existing || ($existing['status'] ?? '') !== 'approved') {
+                continue;
+            }
+
+            $oldItemId = (int) $existing['item_id'];
+            $newItemId = (int) ($line['item_id'] ?? 0);
+            $oldQty = (float) $existing['qty'];
+            $newQty = (float) ($line['qty'] ?? 0);
+
+            $deltaByItem[$oldItemId] = ($deltaByItem[$oldItemId] ?? 0) - $oldQty;
+            $deltaByItem[$newItemId] = ($deltaByItem[$newItemId] ?? 0) + $newQty;
+        }
+
+        foreach ($deltaByItem as $itemId => $delta) {
+            if ($delta <= 0) {
+                continue;
+            }
+
+            $balance = BalanceService::getItemBalance($itemId);
+            if ($delta > $balance) {
+                $item = Item::find($itemId);
+                $label = $item ? $item['item_name'] : 'Item';
+                $errors[] = sprintf(
+                    'Insufficient stock for %s. Available: %s, additional out required: %s.',
+                    $label,
+                    format_number($balance, 2),
+                    format_number($delta, 2)
+                );
+            }
+        }
+
+        return $errors;
+    }
+
+    private static function statusPatchAfterEdit(string $status): array
+    {
+        if ($status === 'rejected') {
+            return [
+                'status'           => 'pending',
+                'rejection_reason' => null,
+                'approved_by'      => null,
+                'approved_at'      => null,
+            ];
+        }
+
+        return [];
+    }
+
+    private static function updateRecord(int $id, array $data, array $statusPatch = []): bool
+    {
+        $db = Database::connect();
+        $sql = 'UPDATE stock_out SET
+                item_id = :item_id,
+                customer_id = :customer_id,
+                mfd_date = :mfd_date,
+                qty = :qty,
+                unit = :unit,
+                reason = :reason,
+                remark = :remark';
+
+        if ($statusPatch) {
+            $sql .= ',
+                status = :status,
+                rejection_reason = :rejection_reason,
+                approved_by = :approved_by,
+                approved_at = :approved_at';
+        }
+
+        $sql .= ' WHERE id = :id';
+
+        $stmt = $db->prepare($sql);
+
+        return $stmt->execute(array_merge($data, $statusPatch, ['id' => $id]));
     }
 
     public static function parseLines(array $input): array
@@ -444,11 +677,20 @@ class StockOut
 
     public static function normalizeSubmission(array $input): array
     {
+        $lines = [];
+        foreach (self::parseLines($input) as $line) {
+            $normalized = self::normalizeLine($line);
+            if (!empty($line['id'])) {
+                $normalized['id'] = (int) $line['id'];
+            }
+            $lines[] = $normalized;
+        }
+
         return [
             'customer_id' => (int) ($input['customer_id'] ?? 0),
             'reason'      => $input['reason'] ?? '',
             'remark'      => trim($input['remark'] ?? '') ?: null,
-            'lines'       => array_map([self::class, 'normalizeLine'], self::parseLines($input)),
+            'lines'       => $lines,
         ];
     }
 

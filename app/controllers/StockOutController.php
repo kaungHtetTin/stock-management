@@ -105,8 +105,8 @@ class StockOutController
     {
         require_login();
 
-        $record = StockOut::find($id);
-        if (!$record || !StockOut::canModify($record)) {
+        $record = StockOut::findForEdit($id);
+        if (!$record) {
             flash('error', 'Record not found or cannot be edited.');
             redirect('pages/stock-out/index.php');
         }
@@ -134,23 +134,34 @@ class StockOutController
         require_login();
         require_csrf('pages/stock-out/edit.php?id=' . $id);
 
-        $record = StockOut::find($id);
-        if (!$record || !StockOut::canModify($record)) {
+        $record = StockOut::findForEdit($id);
+        if (!$record) {
             flash('error', 'Record not found or cannot be edited.');
             redirect('pages/stock-out/index.php');
         }
 
-        $data = StockOut::normalize($_POST);
-        $errors = StockOut::validate($_POST);
+        $errors = StockOut::validateEditSubmission($id, $_POST);
 
         if ($errors) {
-            $_SESSION['form_old'] = array_merge($data, ['id' => $id]);
+            $_SESSION['form_old'] = StockOut::normalizeSubmission($_POST);
+            $_SESSION['form_old']['anchor_id'] = $id;
             flash('error', implode(' ', $errors));
             redirect('pages/stock-out/edit.php?id=' . $id);
         }
 
-        StockOut::update($id, $data);
-        flash('success', 'Stock Out request updated.');
+        try {
+            StockOut::updateSubmission($id, $_POST);
+        } catch (Throwable $e) {
+            $_SESSION['form_old'] = StockOut::normalizeSubmission($_POST);
+            $_SESSION['form_old']['anchor_id'] = $id;
+            flash('error', $e->getMessage());
+            redirect('pages/stock-out/edit.php?id=' . $id);
+        }
+
+        $msg = ($record['status'] ?? '') === 'rejected'
+            ? 'Stock Out updated and resubmitted for approval.'
+            : 'Stock Out record updated.';
+        flash('success', $msg);
         redirect('pages/stock-out/index.php');
     }
 
@@ -158,18 +169,22 @@ class StockOutController
     {
         require_login();
 
-        $record = StockOut::find($id);
-        if (!$record || !StockOut::canModify($record)) {
+        $batch = StockOut::findBatchRecords($id);
+        if (empty($batch) || !StockOut::canModify($batch[0])) {
             flash('error', 'Record not found or cannot be deleted.');
             redirect('pages/stock-out/index.php');
         }
 
-        if (!StockOut::delete($id)) {
+        $deleted = StockOut::deleteBatch($id);
+        if ($deleted < 1) {
             flash('error', 'Unable to delete record.');
             redirect('pages/stock-out/index.php');
         }
 
-        flash('success', 'Stock Out request deleted.');
+        $msg = $deleted > 1
+            ? "Stock Out batch deleted ({$deleted} items). Balance recalculated."
+            : 'Stock Out record deleted. Balance recalculated.';
+        flash('success', $msg);
         redirect('pages/stock-out/index.php');
     }
 

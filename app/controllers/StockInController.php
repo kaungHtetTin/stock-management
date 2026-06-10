@@ -95,8 +95,8 @@ class StockInController
     {
         require_login();
 
-        $record = StockIn::find($id);
-        if (!$record || !StockIn::canModify($record)) {
+        $record = StockIn::findForEdit($id);
+        if (!$record) {
             flash('error', 'Record not found or cannot be edited.');
             redirect('pages/stock-in/index.php');
         }
@@ -123,23 +123,34 @@ class StockInController
         require_login();
         require_csrf('pages/stock-in/edit.php?id=' . $id);
 
-        $record = StockIn::find($id);
-        if (!$record || !StockIn::canModify($record)) {
+        $record = StockIn::findForEdit($id);
+        if (!$record) {
             flash('error', 'Record not found or cannot be edited.');
             redirect('pages/stock-in/index.php');
         }
 
-        $data = StockIn::normalize($_POST);
-        $errors = StockIn::validate($_POST);
+        $errors = StockIn::validateEditSubmission($id, $_POST);
 
         if ($errors) {
-            $_SESSION['form_old'] = array_merge($data, ['id' => $id, 'item_id' => $data['item_id']]);
+            $_SESSION['form_old'] = StockIn::normalizeSubmission($_POST);
+            $_SESSION['form_old']['anchor_id'] = $id;
             flash('error', implode(' ', $errors));
             redirect('pages/stock-in/edit.php?id=' . $id);
         }
 
-        StockIn::update($id, $data);
-        flash('success', 'Stock In request updated.');
+        try {
+            StockIn::updateSubmission($id, $_POST);
+        } catch (Throwable $e) {
+            $_SESSION['form_old'] = StockIn::normalizeSubmission($_POST);
+            $_SESSION['form_old']['anchor_id'] = $id;
+            flash('error', $e->getMessage());
+            redirect('pages/stock-in/edit.php?id=' . $id);
+        }
+
+        $msg = ($record['status'] ?? '') === 'rejected'
+            ? 'Stock In updated and resubmitted for approval.'
+            : 'Stock In record updated.';
+        flash('success', $msg);
         redirect('pages/stock-in/index.php');
     }
 
@@ -147,18 +158,22 @@ class StockInController
     {
         require_login();
 
-        $record = StockIn::find($id);
-        if (!$record || !StockIn::canModify($record)) {
+        $batch = StockIn::findBatchRecords($id);
+        if (empty($batch) || !StockIn::canModify($batch[0])) {
             flash('error', 'Record not found or cannot be deleted.');
             redirect('pages/stock-in/index.php');
         }
 
-        if (!StockIn::delete($id)) {
+        $deleted = StockIn::deleteBatch($id);
+        if ($deleted < 1) {
             flash('error', 'Unable to delete record.');
             redirect('pages/stock-in/index.php');
         }
 
-        flash('success', 'Stock In request deleted.');
+        $msg = $deleted > 1
+            ? "Stock In batch deleted ({$deleted} items). Balance recalculated."
+            : 'Stock In record deleted. Balance recalculated.';
+        flash('success', $msg);
         redirect('pages/stock-in/index.php');
     }
 

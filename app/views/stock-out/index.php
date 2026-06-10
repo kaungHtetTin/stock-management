@@ -125,9 +125,19 @@ require APP_PATH . '/views/partials/search-card.php';
                             <a href="<?= base_url('pages/stock-out/edit.php?id=' . $row['id']) ?>" class="btn-action" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            <?php
+                            $batchSize = (int) ($row['batch_size'] ?? 1);
+                            $deleteLabel = $batchSize > 1
+                                ? e($row['item_name']) . ' (batch of ' . $batchSize . ' items)'
+                                : e($row['item_name']);
+                            $deleteMessage = $batchSize > 1
+                                ? 'Delete this batch of ' . $batchSize . ' items? Stock balance will recalculate automatically.'
+                                : 'Delete this stock out record? Stock balance will recalculate automatically.';
+                            ?>
                             <button class="btn-action danger" title="Delete"
                                     data-delete="<?= base_url('pages/stock-out/index.php?delete=' . $row['id']) ?>"
-                                    data-name="<?= e($row['item_name']) ?>">
+                                    data-name="<?= $deleteLabel ?>"
+                                    data-delete-message="<?= e($deleteMessage) ?>">
                                 <i class="bi bi-trash"></i>
                             </button>
                             <?php endif; ?>

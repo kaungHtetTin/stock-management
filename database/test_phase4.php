@@ -20,7 +20,7 @@ require APP_PATH . '/models/Item.php';
 require APP_PATH . '/models/Customer.php';
 require APP_PATH . '/models/StockIn.php';
 require APP_PATH . '/models/StockOut.php';
-require APP_PATH . '/services/BalanceService.php';
+require_once APP_PATH . '/services/BalanceService.php';
 require APP_PATH . '/services/ApprovalService.php';
 require __DIR__ . '/test_helpers.php';
 

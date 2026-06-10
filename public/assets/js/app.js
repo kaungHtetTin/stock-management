@@ -42,6 +42,8 @@
         e.preventDefault();
         deleteTargetUrl = $(this).data('delete');
         $('#deleteItemName').text($(this).data('name') || 'this record');
+        const extraMessage = $(this).data('delete-message') || 'This action cannot be undone.';
+        $('#deleteExtraMessage').text(extraMessage);
         $('#confirmDeleteBtn').text($(this).data('confirm-label') || 'Delete');
         new bootstrap.Modal('#deleteModal').show();
     });

@@ -20,6 +20,7 @@ require APP_PATH . '/models/Item.php';
 require APP_PATH . '/models/Customer.php';
 require APP_PATH . '/models/StockIn.php';
 require APP_PATH . '/models/StockOut.php';
+require_once APP_PATH . '/services/BalanceService.php';
 require __DIR__ . '/test_helpers.php';
 
 echo "Stock Management — Phase 3 Test\n";
@@ -99,7 +100,7 @@ try {
     $ids['stock_in'][] = $adminInId;
     $adminIn = StockIn::find($adminInId);
     assert_test('Admin Stock In created as approved', $adminIn && $adminIn['status'] === 'approved');
-    assert_test('Admin cannot modify approved Stock In', $adminIn && !StockIn::canModify($adminIn));
+    assert_test('Admin can modify approved Stock In', $adminIn && StockIn::canModify($adminIn));
 
     set_session_user($staffSession);
     assert_test('Staff initial status is pending', StockIn::initialStatus() === 'pending');
@@ -163,10 +164,17 @@ try {
     assert_test('Staff pending Stock In delete succeeds', StockIn::delete($staffInId) && StockIn::find($staffInId) === null);
     assert_test('Staff pending Stock Out delete succeeds', StockOut::delete($staffOutId) && StockOut::find($staffOutId) === null);
 
-    StockIn::delete($adminInId);
-    StockOut::delete($adminOutId);
-    assert_test('Approved Stock In cannot be deleted', StockIn::find($adminInId) !== null);
-    assert_test('Approved Stock Out cannot be deleted', StockOut::find($adminOutId) !== null);
+    set_session_user($adminSession);
+    $balanceBeforeDelete = BalanceService::getItemBalance($itemId);
+    assert_test('Approved Stock In delete succeeds', StockIn::delete($adminInId) && StockIn::find($adminInId) === null);
+    assert_test('Approved Stock Out delete succeeds', StockOut::delete($adminOutId) && StockOut::find($adminOutId) === null);
+    assert_test(
+        'Balance recalculates after approved delete',
+        BalanceService::getItemBalance($itemId) === $balanceBeforeDelete - 100.0 + 10.0
+    );
+
+    set_session_user($staffSession);
+    assert_test('Staff cannot modify admin approved Stock Out', $adminOut && !StockOut::canModify($adminOut));
 
     assert_test('countPending includes records', StockIn::countPending() >= 0 && StockOut::countPending() >= 0);
 
@@ -183,6 +191,20 @@ try {
     foreach ($multiIn['ids'] as $multiInId) {
         $ids['stock_in'][] = $multiInId;
     }
+
+    $batchEditInput = [
+        'in_charge_name' => 'Batch Handler Updated',
+        'lines' => [
+            ['id' => $multiIn['ids'][0], 'item_id' => $itemId, 'mfd_date' => '2026-01-01', 'expire_date' => '2026-12-31',
+             'lot_no' => 'LOT-M1-UPD', 'qty' => 25, 'unit' => 'kg', 'worker_qty' => 5],
+            ['id' => $multiIn['ids'][1], 'item_id' => $itemId, 'mfd_date' => '2026-01-01', 'expire_date' => '2026-12-31',
+             'lot_no' => 'LOT-M2-UPD', 'qty' => 35, 'unit' => 'kg', 'worker_qty' => 5],
+        ],
+    ];
+    assert_test('Batch Stock In edit validation passes', empty(StockIn::validateEditSubmission($multiIn['ids'][0], $batchEditInput)));
+    assert_test('Batch Stock In edit succeeds', StockIn::updateSubmission($multiIn['ids'][0], $batchEditInput));
+    $editedBatch = StockIn::findBatchRecords($multiIn['ids'][0]);
+    assert_test('Batch Stock In qty updated', $editedBatch && (float) $editedBatch[0]['qty'] === 25.0 && (float) $editedBatch[1]['qty'] === 35.0);
 
     $ids['item2'] = Item::create([
         'item_no'     => 'TEST-P3B-' . time(),
@@ -209,6 +231,26 @@ try {
     foreach ($multiOut['ids'] as $multiOutId) {
         $ids['stock_out'][] = $multiOutId;
     }
+
+    set_session_user($staffSession);
+    $rejectedInId = StockIn::create(StockIn::createPayload(StockIn::normalize($stockInInput), (int) $staff['id']));
+    $ids['stock_in'][] = $rejectedInId;
+    $db = Database::connect();
+    $db->prepare('UPDATE stock_in SET status = \'rejected\', rejection_reason = \'Test reject\' WHERE id = :id')
+        ->execute(['id' => $rejectedInId]);
+    $rejectedIn = StockIn::find($rejectedInId);
+    assert_test('Staff can modify rejected Stock In', $rejectedIn && StockIn::canModify($rejectedIn));
+
+    $resubmitInput = [
+        'in_charge_name' => 'Resubmit Handler',
+        'lines' => [
+            array_merge(StockIn::normalizeLine($stockInInput), ['id' => $rejectedInId, 'qty' => 55]),
+        ],
+    ];
+    assert_test('Rejected Stock In edit resets to pending', StockIn::updateSubmission($rejectedInId, $resubmitInput));
+    $resubmitted = StockIn::find($rejectedInId);
+    assert_test('Rejected Stock In status is pending after edit', $resubmitted && $resubmitted['status'] === 'pending');
+    assert_test('Rejected Stock In qty updated on resubmit', $resubmitted && (float) $resubmitted['qty'] === 55.0);
 
 } catch (Throwable $e) {
     echo "[FAIL] Exception: " . $e->getMessage() . "\n";

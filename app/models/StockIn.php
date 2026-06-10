@@ -9,6 +9,7 @@ require_once APP_PATH . '/models/Item.php';
 class StockIn
 {
     public const STATUSES = ['pending', 'approved', 'rejected'];
+    public const EDITABLE_STATUSES = ['pending', 'approved', 'rejected'];
 
     public static function all(array $filters = []): array
     {
@@ -111,30 +112,133 @@ class StockIn
         return ['batch_ref' => $batchRef, 'ids' => $ids];
     }
 
-    public static function update(int $id, array $data): bool
+    public static function findBatchRecords(int $id): array
     {
+        $record = self::find($id);
+        if (!$record) {
+            return [];
+        }
+
+        if (empty($record['batch_ref'])) {
+            return [$record];
+        }
+
         $db = Database::connect();
         $stmt = $db->prepare(
-            'UPDATE stock_in SET
-                item_id = :item_id,
-                mfd_date = :mfd_date,
-                expire_date = :expire_date,
-                lot_no = :lot_no,
-                qty = :qty,
-                unit = :unit,
-                worker_qty = :worker_qty,
-                in_charge_name = :in_charge_name
-             WHERE id = :id AND status = \'pending\''
+            'SELECT si.*, i.item_no, i.item_name, u.display_name AS created_by_name
+             FROM stock_in si
+             INNER JOIN items i ON i.id = si.item_id
+             INNER JOIN users u ON u.id = si.created_by
+             WHERE si.batch_ref = :batch_ref
+             ORDER BY si.id ASC'
         );
+        $stmt->execute(['batch_ref' => $record['batch_ref']]);
 
-        return $stmt->execute(array_merge($data, ['id' => $id]));
+        return array_map([self::class, 'formatRow'], $stmt->fetchAll());
+    }
+
+    public static function findForEdit(int $id): ?array
+    {
+        $batch = self::findBatchRecords($id);
+        if (empty($batch) || !self::canModify($batch[0])) {
+            return null;
+        }
+
+        $first = $batch[0];
+        $lines = [];
+        foreach ($batch as $row) {
+            $lines[] = array_merge(self::normalizeLine($row), ['id' => (int) $row['id']]);
+        }
+
+        return [
+            'anchor_id'      => $id,
+            'id'             => $id,
+            'batch_ref'      => $first['batch_ref'] ?? null,
+            'is_batch'       => count($batch) > 1,
+            'status'         => $first['status'],
+            'in_charge_name' => $first['in_charge_name'],
+            'lines'          => $lines,
+        ];
+    }
+
+    public static function updateSubmission(int $anchorId, array $input): bool
+    {
+        $batch = self::findBatchRecords($anchorId);
+        if (empty($batch) || !self::canModify($batch[0])) {
+            return false;
+        }
+
+        $errors = self::validateEditSubmission($anchorId, $input);
+        if ($errors) {
+            throw new InvalidArgumentException(implode(' ', $errors));
+        }
+
+        $header = [
+            'in_charge_name' => trim($input['in_charge_name'] ?? $input['in_charge'] ?? ''),
+        ];
+        $lines = self::parseLines($input);
+        $byId = [];
+        foreach ($batch as $row) {
+            $byId[(int) $row['id']] = $row;
+        }
+
+        $db = Database::connect();
+        $db->beginTransaction();
+
+        try {
+            foreach ($lines as $line) {
+                $lineId = (int) ($line['id'] ?? 0);
+                $existing = $byId[$lineId] ?? null;
+                if (!$existing) {
+                    throw new RuntimeException('Invalid batch line reference.');
+                }
+
+                $data = array_merge(self::normalizeLine($line), $header);
+                $statusPatch = self::statusPatchAfterEdit($existing['status']);
+                if (!self::updateRecord($lineId, $data, $statusPatch)) {
+                    throw new RuntimeException('Unable to update stock in record.');
+                }
+            }
+
+            $db->commit();
+            return true;
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    public static function update(int $id, array $data): bool
+    {
+        $record = self::find($id);
+        if (!$record) {
+            return false;
+        }
+
+        $statusPatch = self::statusPatchAfterEdit($record['status']);
+        return self::updateRecord($id, $data, $statusPatch);
+    }
+
+    public static function deleteBatch(int $anchorId): int
+    {
+        $batch = self::findBatchRecords($anchorId);
+        if (empty($batch) || !self::canModify($batch[0])) {
+            return 0;
+        }
+
+        $ids = array_map(static fn ($row) => (int) $row['id'], $batch);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        $db = Database::connect();
+        $stmt = $db->prepare("DELETE FROM stock_in WHERE id IN ({$placeholders})");
+        $stmt->execute($ids);
+
+        return $stmt->rowCount();
     }
 
     public static function delete(int $id): bool
     {
-        $db = Database::connect();
-        $stmt = $db->prepare('DELETE FROM stock_in WHERE id = :id AND status = \'pending\'');
-        return $stmt->execute(['id' => $id]);
+        return self::deleteBatch($id) > 0;
     }
 
     public static function countPending(): int
@@ -283,13 +387,86 @@ class StockIn
 
     public static function canModify(array $record): bool
     {
-        if (($record['status'] ?? '') !== 'pending') {
+        if (!in_array($record['status'] ?? '', self::EDITABLE_STATUSES, true)) {
             return false;
         }
         if (is_admin()) {
             return true;
         }
+
         return (int) ($record['raw_created_by'] ?? 0) === (int) (current_user()['id'] ?? 0);
+    }
+
+    public static function validateEditSubmission(int $anchorId, array $input): array
+    {
+        $errors = self::validateSubmission($input);
+        $batch = self::findBatchRecords($anchorId);
+
+        if (empty($batch)) {
+            $errors[] = 'Record not found.';
+            return $errors;
+        }
+
+        $lines = self::parseLines($input);
+        if (count($lines) !== count($batch)) {
+            $errors[] = 'Edit the full batch together — line count cannot change.';
+        }
+
+        $batchIds = array_map(static fn ($row) => (int) $row['id'], $batch);
+        sort($batchIds);
+        $submittedIds = array_values(array_filter(array_map(
+            static fn ($line) => (int) ($line['id'] ?? 0),
+            $lines
+        )));
+        sort($submittedIds);
+
+        if ($submittedIds !== $batchIds) {
+            $errors[] = 'Invalid batch line references.';
+        }
+
+        return $errors;
+    }
+
+    private static function statusPatchAfterEdit(string $status): array
+    {
+        if ($status === 'rejected') {
+            return [
+                'status'           => 'pending',
+                'rejection_reason' => null,
+                'approved_by'      => null,
+                'approved_at'      => null,
+            ];
+        }
+
+        return [];
+    }
+
+    private static function updateRecord(int $id, array $data, array $statusPatch = []): bool
+    {
+        $db = Database::connect();
+        $sql = 'UPDATE stock_in SET
+                item_id = :item_id,
+                mfd_date = :mfd_date,
+                expire_date = :expire_date,
+                lot_no = :lot_no,
+                qty = :qty,
+                unit = :unit,
+                worker_qty = :worker_qty,
+                in_charge_name = :in_charge_name';
+
+        if ($statusPatch) {
+            $sql .= ',
+                status = :status,
+                rejection_reason = :rejection_reason,
+                approved_by = :approved_by,
+                approved_at = :approved_at';
+        }
+
+        $sql .= ' WHERE id = :id';
+
+        $stmt = $db->prepare($sql);
+
+        return $stmt->execute(array_merge($data, $statusPatch, ['id' => $id]));
     }
 
     public static function parseLines(array $input): array
@@ -428,9 +605,18 @@ class StockIn
 
     public static function normalizeSubmission(array $input): array
     {
+        $lines = [];
+        foreach (self::parseLines($input) as $line) {
+            $normalized = self::normalizeLine($line);
+            if (!empty($line['id'])) {
+                $normalized['id'] = (int) $line['id'];
+            }
+            $lines[] = $normalized;
+        }
+
         return [
             'in_charge_name' => trim($input['in_charge_name'] ?? $input['in_charge'] ?? ''),
-            'lines'          => array_map([self::class, 'normalizeLine'], self::parseLines($input)),
+            'lines'          => $lines,
         ];
     }
 

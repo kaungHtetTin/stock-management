@@ -2,17 +2,24 @@
 /** @var array $line */
 /** @var int $index */
 /** @var array $items */
+/** @var bool $lineEditMode */
 $index = $index ?? 0;
 $line = $line ?? [];
+$lineEditMode = $lineEditMode ?? false;
 $lineKey = ($index === '__INDEX__') ? '__INDEX__' : (int) $index;
 $lineNum = is_int($lineKey) ? $lineKey + 1 : '#';
 ?>
 <div class="line-item-row border rounded-3 p-3 mb-3 bg-light-subtle" data-line-row>
+    <?php if (!empty($line['id'])): ?>
+    <input type="hidden" name="lines[<?= $lineKey ?>][id]" value="<?= (int) $line['id'] ?>">
+    <?php endif; ?>
     <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="small fw-semibold text-muted">Item line <span data-line-number><?= $lineNum ?></span></span>
+        <?php if (!$lineEditMode): ?>
         <button type="button" class="btn btn-sm btn-outline-danger" data-remove-line title="Remove line" aria-label="Remove line">
             <i class="bi bi-trash"></i>
         </button>
+        <?php endif; ?>
     </div>
     <div class="row g-2">
         <div class="col-12 col-md-6">

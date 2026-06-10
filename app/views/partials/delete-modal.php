@@ -6,7 +6,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0">Are you sure you want to delete <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
+                <p class="mb-2">Are you sure you want to delete <strong id="deleteItemName"></strong>?</p>
+                <p class="mb-0 small text-muted" id="deleteExtraMessage"></p>
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
