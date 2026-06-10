@@ -4,6 +4,7 @@
  */
 
 require_once APP_PATH . '/helpers/Database.php';
+require_once APP_PATH . '/helpers/pagination.php';
 require_once APP_PATH . '/models/Category.php';
 
 class Item
@@ -11,11 +12,49 @@ class Item
     public static function all(array $filters = []): array
     {
         $db = Database::connect();
-        $sql = 'SELECT i.*, c.name AS category, ' . self::balanceSubquery() . ' AS balance
-                FROM items i
-                INNER JOIN categories c ON c.id = i.category_id
-                WHERE i.is_active = 1';
         $params = [];
+        $sql = 'SELECT i.*, c.name AS category, ' . self::balanceSubquery() . ' AS balance'
+            . self::listFromJoin()
+            . self::listWhere($filters, $params)
+            . ' ORDER BY i.item_no ASC';
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    public static function paginate(array $filters, int $page): array
+    {
+        $db = Database::connect();
+        $params = [];
+        $where = self::listWhere($filters, $params);
+        $from = self::listFromJoin();
+
+        $countStmt = $db->prepare('SELECT COUNT(*)' . $from . $where);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $perPage = Pagination::PER_PAGE;
+        $offset = Pagination::offset($page, $perPage);
+        $sql = 'SELECT i.*, c.name AS category, ' . self::balanceSubquery() . ' AS balance'
+            . $from . $where
+            . " ORDER BY i.item_no ASC LIMIT {$perPage} OFFSET {$offset}";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return Pagination::result($stmt->fetchAll(), $total, $page, $perPage);
+    }
+
+    private static function listFromJoin(): string
+    {
+        return ' FROM items i INNER JOIN categories c ON c.id = i.category_id WHERE i.is_active = 1';
+    }
+
+    private static function listWhere(array $filters, array &$params): string
+    {
+        $sql = '';
 
         if (!empty($filters['q'])) {
             $sql .= ' AND (i.item_no LIKE :q1 OR i.item_name LIKE :q2)';
@@ -27,12 +66,7 @@ class Item
             $params['category_id'] = (int) $filters['category_id'];
         }
 
-        $sql .= ' ORDER BY i.item_no ASC';
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll();
+        return $sql;
     }
 
     public static function find(int $id): ?array

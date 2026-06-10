@@ -1,5 +1,7 @@
 <?php
 $filters = $filters ?? ['q' => '', 'type' => ''];
+$pagination = $pagination ?? ['total' => count($customers ?? [])];
+$listTotal = (int) ($pagination['total'] ?? 0);
 $actions = is_admin() ? [['label' => 'Add Customer', 'url' => base_url('pages/customers/create.php'), 'icon' => 'plus-lg']] : [];
 page_header('Customers', 'Customer master — Retail & Whole Sale', $actions);
 
@@ -28,7 +30,7 @@ require APP_PATH . '/views/partials/search-card.php';
 
 <div class="card card-polished table-card">
     <div class="card-header card-header-polished">
-        <span>Customer List <span class="text-muted fw-normal">(<?= count($customers) ?>)</span></span>
+        <span>Customer List <span class="text-muted fw-normal">(<?= format_number($listTotal) ?>)</span></span>
         <input type="text" class="form-control form-control-sm" id="tableSearch"
                placeholder="Quick filter..." style="max-width:220px">
     </div>
@@ -86,6 +88,15 @@ require APP_PATH . '/views/partials/search-card.php';
             </tbody>
         </table>
     </div>
+    <?php
+    $page = $pagination['page'];
+    $totalPages = $pagination['total_pages'];
+    $total = $pagination['total'];
+    $perPage = $pagination['per_page'];
+    $baseUrl = base_url('pages/customers/index.php') . list_query_string($filters);
+    $ariaLabel = 'Customers pagination';
+    require APP_PATH . '/views/partials/pagination.php';
+    ?>
 </div>
 
 <?php if (is_admin()) require APP_PATH . '/views/partials/delete-modal.php'; ?>

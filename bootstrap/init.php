@@ -14,6 +14,7 @@ require APP_PATH . '/helpers/functions.php';
 require APP_PATH . '/helpers/session.php';
 require APP_PATH . '/helpers/csrf.php';
 require APP_PATH . '/helpers/logger.php';
+require APP_PATH . '/helpers/pagination.php';
 require APP_PATH . '/helpers/Database.php';
 
 register_app_error_handlers();

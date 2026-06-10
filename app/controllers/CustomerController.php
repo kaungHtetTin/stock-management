@@ -18,12 +18,14 @@ class CustomerController
             'q'    => trim($_GET['q'] ?? ''),
             'type' => $_GET['type'] ?? '',
         ];
+        $pagination = Customer::paginate($filters, Pagination::pageFromRequest());
 
         render_app('customers/index.php', [
             'pageTitle'   => 'Customers — ' . APP_NAME,
             'currentNav'  => 'customers',
             'breadcrumbs' => [['label' => 'Customers']],
-            'customers'   => Customer::all($filters),
+            'customers'   => $pagination['rows'],
+            'pagination'  => $pagination,
             'filters'     => $filters,
         ]);
     }

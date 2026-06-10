@@ -33,13 +33,15 @@ class StockInController
             'status'    => $_GET['status'] ?? '',
             'item'      => trim($_GET['item'] ?? ''),
         ];
+        $pagination = StockIn::paginate($filters, Pagination::pageFromRequest());
 
         render_app('stock-in/index.php', [
             'pageTitle'    => 'Stock In — ' . APP_NAME,
             'currentNav'   => 'stock-in',
             'breadcrumbs'  => [['label' => 'Stock In']],
             'pendingBadge' => is_admin() ? StockIn::countPending() + StockOut::countPending() : 0,
-            'records'      => StockIn::all($filters),
+            'records'      => $pagination['rows'],
+            'pagination'   => $pagination,
             'filters'      => $filters,
         ]);
     }

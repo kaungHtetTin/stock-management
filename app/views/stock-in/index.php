@@ -1,6 +1,8 @@
 <?php
 require_once APP_PATH . '/models/StockIn.php';
 $filters = $filters ?? ['date_from' => '', 'date_to' => '', 'status' => '', 'item' => ''];
+$pagination = $pagination ?? ['total' => count($records ?? [])];
+$listTotal = (int) ($pagination['total'] ?? 0);
 page_header(
     'Stock In',
     is_admin() ? 'Record and approve incoming stock' : 'Submit stock in requests for approval',
@@ -40,7 +42,7 @@ require APP_PATH . '/views/partials/search-card.php';
 
 <div class="card card-polished table-card">
     <div class="card-header card-header-polished">
-        <span>Stock In Records <span class="text-muted fw-normal">(<?= count($records) ?>)</span></span>
+        <span>Stock In Records <span class="text-muted fw-normal">(<?= format_number($listTotal) ?>)</span></span>
         <input type="text" class="form-control form-control-sm" id="tableSearch"
                placeholder="Quick filter..." style="max-width:220px">
     </div>
@@ -142,6 +144,15 @@ require APP_PATH . '/views/partials/search-card.php';
             </tbody>
         </table>
     </div>
+    <?php
+    $page = $pagination['page'];
+    $totalPages = $pagination['total_pages'];
+    $total = $pagination['total'];
+    $perPage = $pagination['per_page'];
+    $baseUrl = base_url('pages/stock-in/index.php') . list_query_string($filters);
+    $ariaLabel = 'Stock in pagination';
+    require APP_PATH . '/views/partials/pagination.php';
+    ?>
 </div>
 
 <?php

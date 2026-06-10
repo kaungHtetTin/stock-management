@@ -36,13 +36,15 @@ class StockOutController
             'customer'  => trim($_GET['customer'] ?? ''),
             'item'      => trim($_GET['item'] ?? ''),
         ];
+        $pagination = StockOut::paginate($filters, Pagination::pageFromRequest());
 
         render_app('stock-out/index.php', [
             'pageTitle'    => 'Stock Out — ' . APP_NAME,
             'currentNav'   => 'stock-out',
             'breadcrumbs'  => [['label' => 'Stock Out']],
             'pendingBadge' => is_admin() ? StockIn::countPending() + StockOut::countPending() : 0,
-            'records'      => StockOut::all($filters),
+            'records'      => $pagination['rows'],
+            'pagination'   => $pagination,
             'filters'      => $filters,
         ]);
     }

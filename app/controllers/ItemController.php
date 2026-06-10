@@ -19,12 +19,14 @@ class ItemController
             'q'           => trim($_GET['q'] ?? ''),
             'category_id' => $_GET['category_id'] ?? '',
         ];
+        $pagination = Item::paginate($filters, Pagination::pageFromRequest());
 
         render_app('items/index.php', [
             'pageTitle'   => 'Items — ' . APP_NAME,
             'currentNav'  => 'items',
             'breadcrumbs' => [['label' => 'Items']],
-            'items'       => Item::all($filters),
+            'items'       => $pagination['rows'],
+            'pagination'  => $pagination,
             'categories'  => Category::activeList(),
             'filters'     => $filters,
         ]);

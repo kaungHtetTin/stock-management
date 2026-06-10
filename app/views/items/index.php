@@ -1,6 +1,8 @@
 <?php
 $filters = $filters ?? ['q' => '', 'category_id' => ''];
 $categories = $categories ?? [];
+$pagination = $pagination ?? ['total' => count($items ?? [])];
+$listTotal = (int) ($pagination['total'] ?? 0);
 $actions = is_admin() ? [['label' => 'Add Item', 'url' => base_url('pages/items/create.php'), 'icon' => 'plus-lg']] : [];
 page_header('Items', 'Product master — Fruits, Gelato & Icecream', $actions);
 
@@ -29,7 +31,7 @@ require APP_PATH . '/views/partials/search-card.php';
 
 <div class="card card-polished table-card">
     <div class="card-header card-header-polished">
-        <span>Item List <span class="text-muted fw-normal">(<?= count($items) ?>)</span></span>
+        <span>Item List <span class="text-muted fw-normal">(<?= format_number($listTotal) ?>)</span></span>
         <input type="text" class="form-control form-control-sm" id="tableSearch"
                placeholder="Quick filter..." style="max-width:220px">
     </div>
@@ -89,6 +91,15 @@ require APP_PATH . '/views/partials/search-card.php';
             </tbody>
         </table>
     </div>
+    <?php
+    $page = $pagination['page'];
+    $totalPages = $pagination['total_pages'];
+    $total = $pagination['total'];
+    $perPage = $pagination['per_page'];
+    $baseUrl = base_url('pages/items/index.php') . list_query_string($filters);
+    $ariaLabel = 'Items pagination';
+    require APP_PATH . '/views/partials/pagination.php';
+    ?>
 </div>
 
 <?php if (is_admin()) require APP_PATH . '/views/partials/delete-modal.php'; ?>

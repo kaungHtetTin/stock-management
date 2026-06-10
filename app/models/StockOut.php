@@ -4,6 +4,7 @@
  */
 
 require_once APP_PATH . '/helpers/Database.php';
+require_once APP_PATH . '/helpers/pagination.php';
 require_once APP_PATH . '/models/Item.php';
 require_once APP_PATH . '/models/Customer.php';
 
@@ -16,15 +17,60 @@ class StockOut
     public static function all(array $filters = []): array
     {
         $db = Database::connect();
-        $sql = 'SELECT so.*, i.item_no, i.item_name, c.customer_name, u.display_name AS created_by_name,
+        $params = [];
+        $sql = self::listSelect()
+            . self::listFromJoin()
+            . self::listWhere($filters, $params)
+            . ' ORDER BY so.created_at DESC';
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return array_map([self::class, 'formatRow'], $stmt->fetchAll());
+    }
+
+    public static function paginate(array $filters, int $page): array
+    {
+        $db = Database::connect();
+        $params = [];
+        $where = self::listWhere($filters, $params);
+        $from = self::listFromJoin();
+
+        $countStmt = $db->prepare('SELECT COUNT(*)' . $from . $where);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $perPage = Pagination::PER_PAGE;
+        $offset = Pagination::offset($page, $perPage);
+        $sql = self::listSelect() . $from . $where
+            . " ORDER BY so.created_at DESC LIMIT {$perPage} OFFSET {$offset}";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $rows = array_map([self::class, 'formatRow'], $stmt->fetchAll());
+
+        return Pagination::result($rows, $total, $page, $perPage);
+    }
+
+    private static function listSelect(): string
+    {
+        return 'SELECT so.*, i.item_no, i.item_name, c.customer_name, u.display_name AS created_by_name,
                 (SELECT COUNT(*) FROM stock_out so2
-                 WHERE so.batch_ref IS NOT NULL AND so2.batch_ref = so.batch_ref) AS batch_size
-                FROM stock_out so
+                 WHERE so.batch_ref IS NOT NULL AND so2.batch_ref = so.batch_ref) AS batch_size';
+    }
+
+    private static function listFromJoin(): string
+    {
+        return ' FROM stock_out so
                 INNER JOIN items i ON i.id = so.item_id
                 INNER JOIN customers c ON c.id = so.customer_id
                 INNER JOIN users u ON u.id = so.created_by
                 WHERE 1=1';
-        $params = [];
+    }
+
+    private static function listWhere(array $filters, array &$params): string
+    {
+        $sql = '';
 
         if (!empty($filters['date_from'])) {
             $sql .= ' AND DATE(so.created_at) >= :date_from';
@@ -56,12 +102,7 @@ class StockOut
             $params['item1'] = $params['item2'] = '%' . $filters['item'] . '%';
         }
 
-        $sql .= ' ORDER BY so.created_at DESC';
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-
-        return array_map([self::class, 'formatRow'], $stmt->fetchAll());
+        return $sql;
     }
 
     public static function find(int $id): ?array

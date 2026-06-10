@@ -4,6 +4,7 @@
  */
 
 require_once APP_PATH . '/helpers/Database.php';
+require_once APP_PATH . '/helpers/pagination.php';
 
 class Customer
 {
@@ -12,8 +13,42 @@ class Customer
     public static function all(array $filters = []): array
     {
         $db = Database::connect();
-        $sql = 'SELECT * FROM customers WHERE is_active = 1';
         $params = [];
+        $sql = 'SELECT * FROM customers WHERE is_active = 1'
+            . self::listWhere($filters, $params)
+            . ' ORDER BY customer_code ASC';
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    public static function paginate(array $filters, int $page): array
+    {
+        $db = Database::connect();
+        $params = [];
+        $where = self::listWhere($filters, $params);
+
+        $countStmt = $db->prepare('SELECT COUNT(*) FROM customers WHERE is_active = 1' . $where);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $perPage = Pagination::PER_PAGE;
+        $offset = Pagination::offset($page, $perPage);
+        $sql = 'SELECT * FROM customers WHERE is_active = 1'
+            . $where
+            . " ORDER BY customer_code ASC LIMIT {$perPage} OFFSET {$offset}";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return Pagination::result($stmt->fetchAll(), $total, $page, $perPage);
+    }
+
+    private static function listWhere(array $filters, array &$params): string
+    {
+        $sql = '';
 
         if (!empty($filters['q'])) {
             $sql .= ' AND (customer_code LIKE :q1 OR customer_name LIKE :q2 OR contact_person LIKE :q3 OR phone LIKE :q4)';
@@ -25,12 +60,7 @@ class Customer
             $params['type'] = $filters['type'];
         }
 
-        $sql .= ' ORDER BY customer_code ASC';
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll();
+        return $sql;
     }
 
     public static function find(int $id): ?array

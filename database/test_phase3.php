@@ -128,6 +128,8 @@ try {
 
     assert_test('Stock In status filter works', count(StockIn::all(['status' => 'pending'])) >= 1);
     assert_test('Stock In item filter works', count(StockIn::all(['item' => 'Phase 3 Test'])) >= 1);
+    $stockInPage = StockIn::paginate(['item' => 'Phase 3 Test'], 1);
+    assert_test('Stock In paginate metadata', $stockInPage['total'] >= 1 && $stockInPage['per_page'] === Pagination::PER_PAGE);
 
     $stockOutInput = [
         'item_id'     => $itemId,
@@ -160,6 +162,8 @@ try {
 
     assert_test('Stock Out reason filter works', count(StockOut::all(['reason' => 'Sales'])) >= 1);
     assert_test('Stock Out customer filter works', count(StockOut::all(['customer' => 'Phase 3 Test'])) >= 1);
+    $stockOutPage = StockOut::paginate(['customer' => 'Phase 3 Test'], 1);
+    assert_test('Stock Out paginate metadata', $stockOutPage['total'] >= 1 && $stockOutPage['total_pages'] >= 1);
 
     assert_test('Staff pending Stock In delete succeeds', StockIn::delete($staffInId) && StockIn::find($staffInId) === null);
     assert_test('Staff pending Stock Out delete succeeds', StockOut::delete($staffOutId) && StockOut::find($staffOutId) === null);

@@ -59,6 +59,9 @@ try {
 
     assert_test('Item search finds record', count(Item::all(['q' => 'Phase 2 Updated'])) >= 1);
     assert_test('Item category filter works', count(Item::all(['category_id' => test_category_id('Fruits')])) >= 1);
+    $itemPage = Item::paginate(['q' => 'Phase 2 Updated'], 1);
+    assert_test('Item paginate returns rows', count($itemPage['rows']) >= 1);
+    assert_test('Item paginate metadata', $itemPage['total'] >= 1 && $itemPage['per_page'] === Pagination::PER_PAGE);
     assert_test('Duplicate item_no rejected', !empty(Item::validate($itemData)));
 
     $customerData = [
@@ -91,6 +94,9 @@ try {
     assert_test('Customer remark saved', $customer && $customer['remark'] === 'Updated remark');
 
     assert_test('Customer search works', count(Customer::all(['q' => 'Phase 2 Updated'])) >= 1);
+    $customerPage = Customer::paginate(['q' => 'Phase 2 Updated'], 1);
+    assert_test('Customer paginate returns rows', count($customerPage['rows']) >= 1);
+    assert_test('Customer paginate metadata', $customerPage['total'] >= 1 && $customerPage['total_pages'] >= 1);
     assert_test('Customer has no stock out yet', !Customer::hasStockOutRecords($createdCustomerId));
 
     assert_test('Item has no stock records yet', !Item::hasStockRecords($createdItemId));

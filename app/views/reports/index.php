@@ -332,7 +332,10 @@ $paginationBase = base_url('pages/reports/index.php') . report_query_string($fil
     <?php
     $page = $report['page'];
     $totalPages = $report['total_pages'];
+    $total = $report['total'];
+    $perPage = $report['per_page'];
     $baseUrl = $paginationBase;
+    $ariaLabel = 'Report pagination';
     require APP_PATH . '/views/partials/pagination.php';
     ?>
 </div>
