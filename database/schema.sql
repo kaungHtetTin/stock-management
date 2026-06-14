@@ -154,6 +154,7 @@ CREATE TABLE IF NOT EXISTS stock_out (
     item_id             INT UNSIGNED NOT NULL,
     customer_id         INT UNSIGNED NOT NULL,
     mfd_date            DATE NULL DEFAULT NULL,
+    expire_date         DATE NULL DEFAULT NULL,
     qty                 DECIMAL(12, 2) NOT NULL,
     unit                VARCHAR(20)  NOT NULL,
     reason              ENUM('Sales', 'Sample', 'Sale & Marketing', 'Other') NOT NULL,

@@ -7,7 +7,9 @@ require APP_PATH . '/views/layouts/header.php';
     <div class="login-brand-panel">
         <div class="login-mesh"></div>
         <div class="login-brand-content">
-            <div class="login-brand-icon"><i class="bi bi-boxes"></i></div>
+            <div class="login-brand-icon">
+                <img src="<?= asset_url('img/logo.png') ?>" alt="<?= e(APP_NAME) ?> logo">
+            </div>
             <span class="login-brand-badge">Production System</span>
             <h1 class="login-brand-title"><?= e(APP_COMPANY) ?></h1>
             <p class="login-brand-sub">Stock Management Platform<br><span>Company ID: <?= e(APP_COMPANY_ID) ?></span></p>
@@ -23,7 +25,9 @@ require APP_PATH . '/views/layouts/header.php';
     <div class="login-form-panel">
         <div class="login-card glass">
             <div class="login-mobile-brand">
-                <div class="login-brand-icon login-brand-icon--sm"><i class="bi bi-boxes"></i></div>
+                <div class="login-brand-icon login-brand-icon--sm">
+                    <img src="<?= asset_url('img/logo.png') ?>" alt="<?= e(APP_NAME) ?> logo">
+                </div>
                 <div class="fw-bold"><?= e(APP_NAME) ?></div>
                 <small class="text-muted"><?= e(APP_COMPANY) ?></small>
             </div>

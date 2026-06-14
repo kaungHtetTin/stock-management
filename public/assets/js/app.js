@@ -18,7 +18,8 @@
     const root = document.documentElement;
     const themeKey = 'app.theme';
     const brandKey = 'app.brand';
-    const defaultBrand = '#087f74';
+    const legacyDefaultBrand = '#087f74';
+    const defaultBrand = '#545760';
 
     function applyTheme(theme) {
         root.setAttribute('data-theme', theme);
@@ -36,7 +37,8 @@
     }
 
     const savedTheme = localStorage.getItem(themeKey) || 'light';
-    const savedBrand = localStorage.getItem(brandKey) || defaultBrand;
+    const storedBrand = localStorage.getItem(brandKey);
+    const savedBrand = !storedBrand || storedBrand.toLowerCase() === legacyDefaultBrand ? defaultBrand : storedBrand;
     applyTheme(savedTheme);
     applyBrand(savedBrand);
 
@@ -74,6 +76,7 @@
         { label: 'Categories', url: 'pages/categories/index.php' },
         { label: 'Customers', url: 'pages/customers/index.php' },
         { label: 'Balance', url: 'pages/balance/index.php' },
+        { label: 'Expiry Tracking', url: 'pages/expiry/index.php' },
         { label: 'Stock In', url: 'pages/stock-in/index.php' },
         { label: 'Stock Out', url: 'pages/stock-out/index.php' },
         { label: 'Reports', url: 'pages/reports/index.php' },
@@ -289,7 +292,7 @@
     /* Chart defaults */
     window.AppCharts = {
         colors: {
-            primary: '#087f74',
+            primary: '#545760',
             fruits: '#ea580c',
             gelato: '#db2777',
             icecream: '#2563eb',

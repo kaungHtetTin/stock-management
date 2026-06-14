@@ -101,6 +101,7 @@ $phaseTests = [
     'test_phase5.php',
     'test_phase6.php',
     'test_phase7.php',
+    'test_expiry_tracking.php',
 ];
 
 echo "\nRegression tests:\n";

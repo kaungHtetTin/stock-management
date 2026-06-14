@@ -56,6 +56,7 @@ require APP_PATH . '/views/partials/search-card.php';
                     <th>Item</th>
                     <th>Customer</th>
                     <th>MFD</th>
+                    <th>Expire</th>
                     <th>Qty</th>
                     <th>Reason</th>
                     <th>Status</th>
@@ -66,7 +67,7 @@ require APP_PATH . '/views/partials/search-card.php';
             <tbody>
                 <?php if (empty($records)): ?>
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-5">
+                    <td colspan="9" class="text-center text-muted py-5">
                         <i class="bi bi-inbox d-block fs-2 mb-2 opacity-50"></i>
                         No stock out records found.
                     </td>
@@ -86,6 +87,7 @@ require APP_PATH . '/views/partials/search-card.php';
                     </td>
                     <td data-label="Customer"><?= e($row['customer_name']) ?></td>
                     <td data-label="MFD"><?= format_date($row['mfd_date']) ?></td>
+                    <td data-label="Expire"><?= format_date($row['expire_date']) ?></td>
                     <td data-label="Qty"><strong><?= format_number($row['qty']) ?></strong> <?= e($row['unit']) ?></td>
                     <td data-label="Reason"><?= reason_badge($row['reason']) ?></td>
                     <td data-label="Status">

@@ -42,6 +42,11 @@ $lineNum = is_int($lineKey) ? $lineKey + 1 : '#';
                    value="<?= e($line['mfd_date'] ?? '') ?>">
         </div>
         <div class="col-6 col-md-3">
+            <label class="form-label">Expire Date</label>
+            <input type="date" class="form-control" name="lines[<?= $lineKey ?>][expire_date]"
+                   value="<?= e($line['expire_date'] ?? '') ?>">
+        </div>
+        <div class="col-6 col-md-3">
             <label class="form-label">Qty <span class="required">*</span></label>
             <input type="number" class="form-control" name="lines[<?= $lineKey ?>][qty]" min="0.01" step="0.01"
                    value="<?= e($line['qty'] ?? '') ?>" required>

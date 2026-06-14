@@ -135,6 +135,7 @@ try {
         'item_id'     => $itemId,
         'customer_id' => $customerId,
         'mfd_date'    => '2026-01-01',
+        'expire_date' => '2026-12-31',
         'qty'         => 10,
         'unit'        => 'kg',
         'reason'      => 'Sales',
@@ -146,12 +147,17 @@ try {
         'reason' => 'Other',
         'remark' => '',
     ]))));
+    assert_test('Stock Out rejects expire before MFD', !empty(StockOut::validate(array_merge($stockOutInput, [
+        'mfd_date' => '2026-06-01',
+        'expire_date' => '2026-01-01',
+    ]))));
 
     set_session_user($adminSession);
     $adminOutId = StockOut::create(StockOut::createPayload(StockOut::normalize($stockOutInput), (int) $admin['id']));
     $ids['stock_out'][] = $adminOutId;
     $adminOut = StockOut::find($adminOutId);
     assert_test('Admin Stock Out created as approved', $adminOut && $adminOut['status'] === 'approved');
+    assert_test('Stock Out expire date saved', $adminOut && $adminOut['expire_date'] === '2026-12-31');
 
     set_session_user($staffSession);
     $staffOutId = StockOut::create(StockOut::createPayload(StockOut::normalize($stockOutInput), (int) $staff['id']));
@@ -226,8 +232,8 @@ try {
         'reason'      => 'Sales',
         'remark'      => null,
         'lines'       => [
-            ['item_id' => $itemId, 'mfd_date' => '2026-01-01', 'qty' => 2, 'unit' => 'kg'],
-            ['item_id' => $item2Id, 'mfd_date' => '2026-01-01', 'qty' => 3, 'unit' => 'kg'],
+            ['item_id' => $itemId, 'mfd_date' => '2026-01-01', 'expire_date' => '2026-12-31', 'qty' => 2, 'unit' => 'kg'],
+            ['item_id' => $item2Id, 'mfd_date' => '2026-01-01', 'expire_date' => '2026-12-31', 'qty' => 3, 'unit' => 'kg'],
         ],
     ], (int) $admin['id']);
     assert_test('Multi Stock Out creates two records', count($multiOut['ids']) === 2);

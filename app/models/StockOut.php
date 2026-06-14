@@ -128,10 +128,10 @@ class StockOut
         $db = Database::connect();
         $stmt = $db->prepare(
             'INSERT INTO stock_out (
-                batch_ref, item_id, customer_id, mfd_date, qty, unit, reason, remark,
+                batch_ref, item_id, customer_id, mfd_date, expire_date, qty, unit, reason, remark,
                 status, created_by, approved_by, approved_at
              ) VALUES (
-                :batch_ref, :item_id, :customer_id, :mfd_date, :qty, :unit, :reason, :remark,
+                :batch_ref, :item_id, :customer_id, :mfd_date, :expire_date, :qty, :unit, :reason, :remark,
                 :status, :created_by, :approved_by, :approved_at
              )'
         );
@@ -562,6 +562,7 @@ class StockOut
                 item_id = :item_id,
                 customer_id = :customer_id,
                 mfd_date = :mfd_date,
+                expire_date = :expire_date,
                 qty = :qty,
                 unit = :unit,
                 reason = :reason,
@@ -612,6 +613,8 @@ class StockOut
         $unit = trim($input['unit'] ?? '');
         $reason = $input['reason'] ?? '';
         $remark = trim($input['remark'] ?? '');
+        $mfd = $input['mfd_date'] ?? '';
+        $expire = $input['expire_date'] ?? '';
 
         if ($itemId <= 0 || !Item::find($itemId)) {
             $errors[] = 'Please select a valid item.';
@@ -635,6 +638,10 @@ class StockOut
 
         if ($reason === 'Other' && $remark === '') {
             $errors[] = 'Remark is required when reason is Other.';
+        }
+
+        if ($mfd && $expire && strtotime($expire) < strtotime($mfd)) {
+            $errors[] = 'Expire Date must be on or after MFD Date.';
         }
 
         return $errors;
@@ -681,6 +688,8 @@ class StockOut
         $itemId = (int) ($line['item_id'] ?? 0);
         $qty = $line['qty'] ?? '';
         $unit = trim($line['unit'] ?? '');
+        $mfd = $line['mfd_date'] ?? '';
+        $expire = $line['expire_date'] ?? '';
 
         if ($itemId <= 0 || !Item::find($itemId)) {
             $errors[] = $prefix . 'Please select a valid item.';
@@ -692,6 +701,10 @@ class StockOut
 
         if ($unit === '') {
             $errors[] = $prefix . 'Unit is required.';
+        }
+
+        if ($mfd && $expire && strtotime($expire) < strtotime($mfd)) {
+            $errors[] = $prefix . 'Expire Date must be on or after MFD Date.';
         }
 
         return $errors;
@@ -709,10 +722,11 @@ class StockOut
     public static function normalizeLine(array $line): array
     {
         return [
-            'item_id'  => (int) ($line['item_id'] ?? 0),
-            'mfd_date' => ($line['mfd_date'] ?? '') ?: null,
-            'qty'      => (float) ($line['qty'] ?? 0),
-            'unit'     => trim($line['unit'] ?? ''),
+            'item_id'     => (int) ($line['item_id'] ?? 0),
+            'mfd_date'    => ($line['mfd_date'] ?? '') ?: null,
+            'expire_date' => ($line['expire_date'] ?? '') ?: null,
+            'qty'         => (float) ($line['qty'] ?? 0),
+            'unit'        => trim($line['unit'] ?? ''),
         ];
     }
 

@@ -5,7 +5,7 @@
 
 :root,
 .app-root {
-    --color-primary: #087f74;
+    --color-primary: #545760;
     --color-primary-dark: color-mix(in srgb, var(--color-primary) 82%, #000);
     --color-primary-soft: color-mix(in srgb, var(--color-primary) 11%, transparent);
     --color-bg: #eef4f4;
@@ -15,7 +15,7 @@
     --color-text: #172033;
     --color-muted: #69768a;
     --color-soft: #f2f6f6;
-    --shadow: 0 8px 22px rgb(8 127 116 / 8%);
+    --shadow: 0 8px 22px rgb(84 87 96 / 8%);
 
     --sidebar-width: 214px;
     --topbar-height: 54px;
@@ -151,7 +151,7 @@ body {
 .login-brand-icon {
     width: 56px;
     height: 56px;
-    background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    background: rgb(255 255 255 / 92%);
     border: 1px solid rgb(255 255 255 / 12%);
     border-radius: 8px;
     display: flex;
@@ -161,11 +161,17 @@ body {
     margin-bottom: 1rem;
 }
 
+.login-brand-icon img {
+    width: 78%;
+    height: 78%;
+    object-fit: contain;
+    display: block;
+}
+
 .login-brand-icon--sm {
     width: 44px;
     height: 44px;
     font-size: 1.15rem;
-    background: var(--color-primary);
     margin: 0 auto 0.5rem;
 }
 
@@ -316,14 +322,22 @@ body {
 .brand-icon {
     width: 34px;
     height: 34px;
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
+    background: var(--color-surface);
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
     flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.brand-icon img {
+    width: 78%;
+    height: 78%;
+    object-fit: contain;
+    display: block;
 }
 
 .brand-title {
@@ -827,6 +841,10 @@ body {
 .stat-card-icon.warning,
 .stat-card-icon.info { background: var(--color-primary-soft); color: var(--color-primary); }
 
+.stat-card-icon.danger { background: rgb(206 68 68 / 10%); color: var(--color-danger); }
+.stat-card-icon.success { background: rgb(22 130 85 / 10%); color: var(--color-success); }
+.stat-card-icon.warning { background: rgb(183 119 0 / 12%); color: var(--color-warning); }
+
 .stat-card-trend {
     font-size: 10px;
     font-weight: 700;
@@ -1080,6 +1098,16 @@ body {
 .badge-status-rejected { background: rgb(206 68 68 / 10%); color: var(--color-danger); }
 .status-info { background: rgb(40 116 188 / 11%); color: var(--color-info); }
 .status-neutral { background: rgb(123 135 149 / 12%); color: #7b8795; }
+
+.expiry-status--expired { background: rgb(206 68 68 / 10%); color: var(--color-danger); }
+.expiry-status--urgent { background: rgb(183 119 0 / 14%); color: var(--color-warning); }
+.expiry-status--warning { background: rgb(40 116 188 / 11%); color: var(--color-info); }
+.expiry-status--healthy { background: rgb(22 130 85 / 10%); color: var(--color-success); }
+
+.expiry-row--expired td:first-child { border-left: 3px solid var(--color-danger); }
+.expiry-row--urgent td:first-child { border-left: 3px solid var(--color-warning); }
+.expiry-row--warning td:first-child { border-left: 3px solid var(--color-info); }
+.expiry-row--healthy td:first-child { border-left: 3px solid var(--color-success); }
 
 .badge-category,
 .badge-type,

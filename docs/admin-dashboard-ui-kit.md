@@ -34,7 +34,7 @@ The admin dashboard is built for **daily operations**, not marketing pages.
 ### 2.1 Minimum HTML shell
 
 ```html
-<div class="app-root" data-theme="light" style="--color-primary: #087f74">
+<div class="app-root" data-theme="light" style="--color-primary: #545760">
   <div class="admin-app">
     <aside class="admin-sidebar glass">
       <!-- Logo + nav + profile -->
@@ -63,7 +63,7 @@ The admin dashboard is built for **daily operations**, not marketing pages.
 
 ```jsx
 const [theme, setTheme] = useStoredState("app.theme", "light");
-const [brand, setBrand] = useStoredState("app.brand", "#087f74");
+const [brand, setBrand] = useStoredState("app.brand", "#545760");
 const themeStyle = { "--color-primary": brand };
 
 return (
@@ -85,7 +85,7 @@ All colors derive from CSS custom properties on `.app-root`. Components should *
 
 | Token | Light default | Purpose |
 | --- | --- | --- |
-| `--color-primary` | `#087f74` | Brand / links / active nav / primary buttons |
+| `--color-primary` | `#545760` | Brand / links / active nav / primary buttons |
 | `--color-primary-dark` | derived via `color-mix` | Primary button hover |
 | `--color-primary-soft` | 11% primary tint | Hover backgrounds, icon wells |
 | `--color-bg` | `#eef4f4` | Page background |

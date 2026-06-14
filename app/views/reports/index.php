@@ -212,6 +212,8 @@ $paginationBase = base_url('pages/reports/index.php') . report_query_string($fil
                 <tr>
                     <th>Item</th>
                     <th>Customer</th>
+                    <th>MFD</th>
+                    <th>Expire</th>
                     <th>Qty</th>
                     <th>Reason</th>
                     <th>Status</th>
@@ -226,6 +228,8 @@ $paginationBase = base_url('pages/reports/index.php') . report_query_string($fil
                         <span class="small"><?= e($row['item_name']) ?></span>
                     </td>
                     <td data-label="Customer"><?= e($row['customer_name']) ?></td>
+                    <td data-label="MFD"><?= format_date($row['mfd_date']) ?></td>
+                    <td data-label="Expire"><?= format_date($row['expire_date']) ?></td>
                     <td data-label="Qty"><strong><?= format_number($row['qty'], 2) ?></strong> <?= e($row['unit']) ?></td>
                     <td data-label="Reason"><?= reason_badge($row['reason']) ?></td>
                     <td data-label="Status"><?= status_badge($row['status']) ?></td>

@@ -16,6 +16,7 @@ $navSections = [
             ['key' => 'categories', 'label' => 'Categories', 'icon' => 'tags', 'url' => 'pages/categories/index.php', 'admin' => true],
             ['key' => 'customers', 'label' => 'Customers', 'icon' => 'people', 'url' => 'pages/customers/index.php'],
             ['key' => 'balance', 'label' => 'Balance', 'icon' => 'bar-chart-line', 'url' => 'pages/balance/index.php'],
+            ['key' => 'expiry', 'label' => 'Expiry Tracking', 'icon' => 'calendar2-week', 'url' => 'pages/expiry/index.php'],
         ],
     ],
     [
@@ -39,7 +40,9 @@ if (is_admin()) {
 ?>
 <aside class="app-sidebar admin-sidebar glass" id="appSidebar">
     <div class="sidebar-brand">
-        <div class="brand-icon"><i class="bi bi-boxes"></i></div>
+        <div class="brand-icon">
+            <img src="<?= asset_url('img/logo.png') ?>" alt="<?= e(APP_NAME) ?> logo">
+        </div>
         <div class="brand-text">
             <span class="brand-title"><?= e(APP_NAME) ?></span>
             <span class="brand-sub"><?= e(APP_COMPANY) ?></span>

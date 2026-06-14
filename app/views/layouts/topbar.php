@@ -42,12 +42,12 @@
                 </div>
                 <p class="eyebrow mt-3">Brand color</p>
                 <div class="theme-swatches">
-                    <button type="button" class="theme-swatch" data-brand="#087f74" style="--swatch:#087f74" title="Teal"></button>
+                    <button type="button" class="theme-swatch" data-brand="#545760" style="--swatch:#545760" title="Slate"></button>
                     <button type="button" class="theme-swatch" data-brand="#4f46e5" style="--swatch:#4f46e5" title="Indigo"></button>
                     <button type="button" class="theme-swatch" data-brand="#2563eb" style="--swatch:#2563eb" title="Blue"></button>
                     <button type="button" class="theme-swatch" data-brand="#059669" style="--swatch:#059669" title="Green"></button>
                     <label class="theme-color-input" title="Custom color">
-                        <input type="color" id="brandColorInput" value="#087f74">
+                        <input type="color" id="brandColorInput" value="#545760">
                     </label>
                 </div>
             </div>
